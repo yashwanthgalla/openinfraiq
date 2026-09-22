@@ -1,12 +1,7 @@
-/* ==========================================================================
-   InfraMaturity - GitHub REST API Client
-   Direct integration with public GitHub endpoints for cloud infrastructure repos.
-   Features 1-hour client-side caching & optional token authentication.
-   ========================================================================== */
 
 const GITHUB_TOKEN_KEY = 'inframaturity_github_token';
 const CACHE_PREFIX = 'inframaturity_gh_cache_';
-const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour TTL
+const CACHE_TTL_MS = 60 * 60 * 1000;
 
 export function getGitHubToken(): string | null {
   return localStorage.getItem(GITHUB_TOKEN_KEY);

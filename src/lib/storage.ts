@@ -1,8 +1,3 @@
-/* ==========================================================================
-   InfraMaturity - Client Storage Abstraction Layer
-   Isolates local persistence so it can seamlessly transition to real
-   services and databases later without changing UI components.
-   ========================================================================== */
 
 import type {
   User,

@@ -1,6 +1,4 @@
-/* ==========================================================================
-   InfraMaturity - URL Parsing & Validation Utilities
-   ========================================================================== */
+
 
 export interface ParsedRepository {
   isValid: boolean;

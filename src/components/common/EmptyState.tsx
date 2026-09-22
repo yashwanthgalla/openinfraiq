@@ -1,8 +1,3 @@
-/* ==========================================================================
-   InfraMaturity - Empty State Component
-   High-clarity, non-fabricated states when user has no searches or items.
-   ========================================================================== */
-
 import type { ReactNode } from 'react';
 
 interface EmptyStateProps {

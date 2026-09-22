@@ -1,7 +1,3 @@
-/* ==========================================================================
-   InfraMaturity - Capstone Research Specifications & Content Data
-   Accurate to specification: no fabricated metrics, numbers, or rankings.
-   ========================================================================== */
 
 import type { WorkflowStep, AssessmentDimension } from '../types/index.ts';
 

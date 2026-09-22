@@ -1,20 +1,12 @@
-/* ==========================================================================
-   InfraMaturity - User Repository Service Abstraction
-   Isolates repository history and saved repositories per authenticated user.
-   Architected for direct migration to backend database APIs (e.g. Firebase Firestore
-   or PostgreSQL / REST endpoints) without modifying UI components.
-   ========================================================================== */
+
 
 import type {
   RepositoryHistoryItem,
   SavedRepositoryItem,
   AssessmentStatus,
   RealAssessmentResult,
-} from '../types/index.ts';
+} from '../types/index.ts'; 
 
-// --------------------------------------------------------------------------
-// Storage Keys (User Scoped)
-// --------------------------------------------------------------------------
 function getUserHistoryKey(userId: string): string {
   return `inframaturity_user_${userId}_history`;
 }
@@ -40,9 +32,6 @@ function safeSet<T>(key: string, value: T): void {
   }
 }
 
-// --------------------------------------------------------------------------
-// Asynchronous Repository Service Methods (Backend-Ready)
-// --------------------------------------------------------------------------
 
 /**
  * Retrieves repository search history for the authenticated user.

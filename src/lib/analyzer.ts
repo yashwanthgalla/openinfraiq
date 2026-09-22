@@ -1,8 +1,3 @@
-/* ==========================================================================
-   InfraMaturity - Real Sustainability Analytics Engine
-   Processes live GitHub repository signals into structured sustainability,
-   continuity, and adoption decision metrics.
-   ========================================================================== */
 
 import {
   fetchRepositoryMetadata,
@@ -167,9 +162,8 @@ export async function analyzeRepository(
   const licenseSpdxId = metadata.license?.spdx_id || 'NOASSERTION';
   const isOrg = metadata.owner.type === 'Organization';
 
-  const governanceSummary = `${isOrg ? 'Organization-backed' : 'Personal account'} repository licensed under ${licenseName}. ${
-    releasesList.length > 0 ? 'Official release tags provided.' : 'No formal releases tagged.'
-  }`;
+  const governanceSummary = `${isOrg ? 'Organization-backed' : 'Personal account'} repository licensed under ${licenseName}. ${releasesList.length > 0 ? 'Official release tags provided.' : 'No formal releases tagged.'
+    }`;
 
   const governance: GovernanceAnalysis = {
     licenseName,

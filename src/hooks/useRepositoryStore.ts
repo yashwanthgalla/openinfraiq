@@ -1,8 +1,3 @@
-/* ==========================================================================
-   InfraMaturity - User Repository Store Hook
-   Provides user-scoped reactive synchronization for search history
-   and saved repositories. Architected for future backend database sync.
-   ========================================================================== */
 
 import { useState, useEffect, useCallback } from 'react';
 import type {

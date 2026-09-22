@@ -1,9 +1,3 @@
-/* ==========================================================================
-   InfraMaturity - Firebase Authentication Model & Architecture
-   Structured to interface with Firebase Authentication SDK directly using
-   client project credentials with fallback to verified account storage.
-   Real authentication: no demo modes.
-   ========================================================================== */
 
 import {
   signInWithPopup,

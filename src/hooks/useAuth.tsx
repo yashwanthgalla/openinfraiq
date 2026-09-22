@@ -1,7 +1,3 @@
-/* ==========================================================================
-   InfraMaturity - Authentication Hook & Context Provider
-   Connected to Firebase Auth architecture. Real user authentication: no demo mode.
-   ========================================================================== */
 
 import { createContext, useContext, useState, type ReactNode } from 'react';
 import type { User, UserProfileUpdate } from '../types/index.ts';
