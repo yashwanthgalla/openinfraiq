@@ -219,9 +219,6 @@ export function ProfilePage() {
                   <span>{user.organization}</span>
                 </span>
               )}
-              <span className="font-mono" style={{ color: 'var(--text-muted)' }}>
-                Provider: {authMode.toUpperCase()}
-              </span>
             </div>
           </div>
         </div>

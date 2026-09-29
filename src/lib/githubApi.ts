@@ -4,7 +4,11 @@ const CACHE_PREFIX = 'inframaturity_gh_cache_';
 const CACHE_TTL_MS = 60 * 60 * 1000;
 
 export function getGitHubToken(): string | null {
-  return localStorage.getItem(GITHUB_TOKEN_KEY);
+  const local = localStorage.getItem(GITHUB_TOKEN_KEY);
+  if (local && local.trim()) return local.trim();
+  const envToken = import.meta.env.VITE_GITHUB_TOKEN;
+  if (envToken && typeof envToken === 'string' && envToken.trim()) return envToken.trim();
+  return null;
 }
 
 export function setGitHubToken(token: string): void {
@@ -61,7 +65,8 @@ async function githubFetch<T>(endpoint: string, cacheKey?: string): Promise<T> {
   };
 
   if (token) {
-    headers.Authorization = `token ${token}`;
+    // GitHub Fine-grained PATs (github_pat_...) use 'Bearer <token>'
+    headers.Authorization = token.startsWith('github_pat_') ? `Bearer ${token}` : `token ${token}`;
   }
 
   const url = `https://api.github.com${endpoint}`;
@@ -110,6 +115,8 @@ export interface RawGitHubRepo {
   stargazers_count: number;
   forks_count: number;
   open_issues_count: number;
+  subscribers_count?: number;
+  watchers_count?: number;
   language: string | null;
   default_branch: string;
   created_at: string;
@@ -151,6 +158,24 @@ export interface RawGitHubCommit {
     };
     message: string;
   };
+}
+
+export interface RawGitHubPull {
+  id: number;
+  number: number;
+  title: string;
+  created_at: string;
+  closed_at: string | null;
+  merged_at: string | null;
+}
+
+export interface RawGitHubIssue {
+  id: number;
+  number: number;
+  title: string;
+  created_at: string;
+  closed_at: string | null;
+  pull_request?: object;
 }
 
 export async function fetchRepositoryMetadata(owner: string, repo: string): Promise<RawGitHubRepo> {
@@ -199,3 +224,32 @@ export async function fetchRepositoryRecentCommits(
     return [];
   }
 }
+
+export async function fetchRepositoryRecentPulls(
+  owner: string,
+  repo: string
+): Promise<RawGitHubPull[]> {
+  try {
+    return await githubFetch<RawGitHubPull[]>(
+      `/repos/${owner}/${repo}/pulls?state=closed&sort=updated&direction=desc&per_page=15`,
+      `pulls_${owner}_${repo}`
+    );
+  } catch {
+    return [];
+  }
+}
+
+export async function fetchRepositoryRecentIssues(
+  owner: string,
+  repo: string
+): Promise<RawGitHubIssue[]> {
+  try {
+    return await githubFetch<RawGitHubIssue[]>(
+      `/repos/${owner}/${repo}/issues?state=closed&sort=updated&direction=desc&per_page=15`,
+      `issues_${owner}_${repo}`
+    );
+  } catch {
+    return [];
+  }
+}
+

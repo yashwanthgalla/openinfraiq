@@ -1,7 +1,13 @@
 /* ==========================================================================
    InfraMaturity - Real Assessment Result Shell
-   Presents live repository analytics, maintainer distribution, release continuity,
-   sustainability indicators, and adoption decision guidance.
+   Presents:
+   - 9 Core Sustainability Metrics (Maintainership, Velocity, Continuity, Growth)
+   - Supporting Repository Data (Stars, Forks, Watchers, Age, License, etc.)
+   - Popularity vs Sustainability Capstone Distinction
+   - Transparent Mathematical Scoring Formulation
+   - In-Page Interactive Visualizations (SVG Radar & Donut)
+   - Standalone Python Graph Generation Script for Review-II PPT
+   - ML Maintenance Continuity Prediction & Adoption Guidance
    ========================================================================== */
 
 import { useState } from 'react';
@@ -9,25 +15,28 @@ import {
   ExternalLink,
   Bookmark,
   BookmarkCheck,
-  Activity,
-  Users,
   GitBranch,
-  History,
   ShieldCheck,
   Clock,
   RotateCw,
   Scale,
   Star,
   GitFork,
-  Key,
-  Calculator,
-  ChevronDown,
-  ChevronUp,
-  HelpCircle,
+  Eye,
+  Calendar,
+  Users,
+  AlertCircle,
+  PieChart,
+  Layers,
+  Cpu,
+  Tag,
 } from 'lucide-react';
 import { StatusBadge } from '../common/StatusBadge.tsx';
+import { PopularityVsSustainabilityCard } from './PopularityVsSustainabilityCard.tsx';
+import { NineMetricsGrid } from './NineMetricsGrid.tsx';
+import { ScoreCalculationSection } from './ScoreCalculationSection.tsx';
+import { SustainabilityVisualCharts } from './SustainabilityVisualCharts.tsx';
 import type { RealAssessmentResult } from '../../types/index.ts';
-import { getGitHubToken, setGitHubToken } from '../../lib/githubApi.ts';
 
 interface AssessmentShellProps {
   data: RealAssessmentResult;
@@ -42,31 +51,7 @@ export function AssessmentShell({
   onToggleSave,
   onReAssess,
 }: AssessmentShellProps) {
-  const [showCalculationDetails, setShowCalculationDetails] = useState(false);
-  const [showTokenSettings, setShowTokenSettings] = useState(false);
-  const [tokenInput, setTokenInput] = useState(getGitHubToken() || '');
-  const [tokenSaved, setTokenSaved] = useState(false);
-
-  const handleSaveToken = (e: React.FormEvent) => {
-    e.preventDefault();
-    setGitHubToken(tokenInput);
-    setTokenSaved(true);
-    setTimeout(() => setTokenSaved(false), 2500);
-  };
-
-  const getRatingBadgeClass = (rating: string) => {
-    switch (rating) {
-      case 'Strong':
-        return 'badge-success';
-      case 'Adequate':
-        return 'badge-neutral';
-      case 'Attention Needed':
-        return 'badge-warning';
-      case 'High Risk':
-      default:
-        return 'badge-error';
-    }
-  };
+  const [activeTab, setActiveTab] = useState<'metrics' | 'charts' | 'ml'>('metrics');
 
   const getContinuityBadgeClass = (status: string) => {
     switch (status) {
@@ -82,16 +67,20 @@ export function AssessmentShell({
     }
   };
 
+  const supporting = data.supportingData;
+  const metrics = data.coreMetrics;
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
-      {/* ----------------------------------------------------------------------
-          1. Repository Identity & Live Stats Header
-         ---------------------------------------------------------------------- */}
+      {/* ======================================================================
+          1. Repository Identity & Live Supporting Data Header
+         ====================================================================== */}
       <div
         className="card"
         style={{
           borderTop: '4px solid var(--accent-amber)',
           boxShadow: 'var(--shadow-md)',
+          padding: 'var(--space-6)',
         }}
       >
         <div
@@ -125,9 +114,10 @@ export function AssessmentShell({
               <h1
                 style={{
                   fontSize: 'var(--text-2xl)',
-                  fontWeight: 700,
+                  fontWeight: 800,
                   color: 'var(--navy-950)',
                   lineHeight: 1.2,
+                  margin: 0,
                 }}
               >
                 {data.name}
@@ -138,7 +128,7 @@ export function AssessmentShell({
               style={{
                 fontSize: 'var(--text-sm)',
                 color: 'var(--text-secondary)',
-                maxWidth: '720px',
+                maxWidth: '740px',
                 marginBottom: 'var(--space-3)',
                 lineHeight: 1.5,
               }}
@@ -146,7 +136,7 @@ export function AssessmentShell({
               {data.description}
             </p>
 
-            {/* Live Repository Badges */}
+            {/* Quick Metadata Line */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
               <a
                 href={data.url}
@@ -160,37 +150,31 @@ export function AssessmentShell({
                   color: 'var(--accent-amber-dark)',
                   textDecoration: 'none',
                   fontFamily: 'var(--font-mono)',
+                  fontWeight: 600,
                 }}
               >
                 <span>{data.url}</span>
                 <ExternalLink size={12} />
               </a>
 
-              <span style={{ color: 'var(--border-light)' }}>•</span>
+              <span style={{ color: 'var(--border-light)' }}>&bull;</span>
 
               <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)' }}>
                 Language: <strong style={{ color: 'var(--navy-950)' }}>{data.language}</strong>
               </span>
 
-              <span style={{ color: 'var(--border-light)' }}>•</span>
+              <span style={{ color: 'var(--border-light)' }}>&bull;</span>
 
               <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                 <Scale size={13} />
                 <span>{data.governance.licenseName}</span>
               </span>
 
-              <span style={{ color: 'var(--border-light)' }}>•</span>
+              <span style={{ color: 'var(--border-light)' }}>&bull;</span>
 
               <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                <Star size={13} />
-                <span>{data.repositoryActivity.starsCount.toLocaleString()}</span>
-              </span>
-
-              <span style={{ color: 'var(--border-light)' }}>•</span>
-
-              <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                <GitFork size={13} />
-                <span>{data.repositoryActivity.forksCount.toLocaleString()}</span>
+                <GitBranch size={13} />
+                <span>Branch: <strong style={{ color: 'var(--navy-950)' }}>{supporting.defaultBranch}</strong></span>
               </span>
             </div>
           </div>
@@ -217,362 +201,313 @@ export function AssessmentShell({
                 <RotateCw size={14} />
               </button>
             )}
-
-            <button
-              onClick={() => setShowTokenSettings(!showTokenSettings)}
-              className="btn btn-outline btn-sm btn-icon"
-              title="Configure GitHub Token"
-            >
-              <Key size={14} />
-            </button>
           </div>
         </div>
 
-        {/* Optional GitHub Token Drawer */}
-        {showTokenSettings && (
-          <div
-            style={{
-              padding: 'var(--space-4)',
-              backgroundColor: 'var(--surface-soft)',
-              borderRadius: 'var(--radius-md)',
-              border: '1px solid var(--border-light)',
-              marginBottom: 'var(--space-4)',
-            }}
-          >
-            <div style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--navy-950)', marginBottom: 'var(--space-1)' }}>
-              Optional: GitHub Personal Access Token
-            </div>
-            <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', marginBottom: 'var(--space-3)' }}>
-              Public requests have a 60/hr limit. Adding a fine-grained or personal token increases this to 5,000 requests/hr. Token is stored locally on this machine only.
-            </p>
-            <form onSubmit={handleSaveToken} style={{ display: 'flex', gap: 'var(--space-2)' }}>
-              <input
-                type="password"
-                value={tokenInput}
-                onChange={(e) => setTokenInput(e.target.value)}
-                placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
-                className="form-input"
-                style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-mono)' }}
-              />
-              <button type="submit" className="btn btn-primary btn-sm">
-                Save Token
-              </button>
-            </form>
-            {tokenSaved && (
-              <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-success)', marginTop: '0.5rem' }}>
-                GitHub Token saved.
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Live Analysis Summary Banner */}
+        {/* ------------------------------------------------------------------
+            Supporting Repository Data Strip
+           ------------------------------------------------------------------ */}
         <div
           style={{
-            padding: 'var(--space-3) var(--space-4)',
-            backgroundColor: 'var(--surface-soft)',
-            border: '1px solid var(--border-light)',
-            borderRadius: 'var(--radius-md)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 'var(--space-3)',
-            flexWrap: 'wrap',
+            marginTop: 'var(--space-4)',
+            paddingTop: 'var(--space-4)',
+            borderTop: '1px solid var(--border-subtle)',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-            <ShieldCheck size={16} color="var(--color-success)" />
-            <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-primary)', fontWeight: 500 }}>
-              Live GitHub data extracted and analyzed.
-            </span>
-          </div>
           <div
             style={{
-              fontSize: 'var(--text-xs)',
+              fontSize: '0.6875rem',
+              fontWeight: 700,
               fontFamily: 'var(--font-mono)',
               color: 'var(--text-secondary)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.3rem',
+              textTransform: 'uppercase',
+              letterSpacing: '0.04em',
+              marginBottom: 'var(--space-2)',
             }}
           >
-            <Clock size={12} />
-            <span>Analyzed at: {new Date(data.analyzedAt).toLocaleTimeString()}</span>
+            Supporting Raw Repository Data (Collected Independently)
+          </div>
+
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+              gap: 'var(--space-2)',
+            }}
+          >
+            <div style={{ backgroundColor: 'var(--surface-soft)', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-light)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#D97706', fontSize: '0.7rem' }}>
+                <Star size={12} />
+                <span>Stars</span>
+              </div>
+              <div style={{ fontSize: 'var(--text-sm)', fontWeight: 700, color: 'var(--navy-950)', fontFamily: 'var(--font-mono)' }}>
+                {supporting.stars.toLocaleString()}
+              </div>
+            </div>
+
+            <div style={{ backgroundColor: 'var(--surface-soft)', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-light)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#2563EB', fontSize: '0.7rem' }}>
+                <GitFork size={12} />
+                <span>Forks</span>
+              </div>
+              <div style={{ fontSize: 'var(--text-sm)', fontWeight: 700, color: 'var(--navy-950)', fontFamily: 'var(--font-mono)' }}>
+                {supporting.forks.toLocaleString()}
+              </div>
+            </div>
+
+            <div style={{ backgroundColor: 'var(--surface-soft)', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-light)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#059669', fontSize: '0.7rem' }}>
+                <Eye size={12} />
+                <span>Watchers</span>
+              </div>
+              <div style={{ fontSize: 'var(--text-sm)', fontWeight: 700, color: 'var(--navy-950)', fontFamily: 'var(--font-mono)' }}>
+                {supporting.watchers.toLocaleString()}
+              </div>
+            </div>
+
+            <div style={{ backgroundColor: 'var(--surface-soft)', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-light)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: 'var(--navy-700)', fontSize: '0.7rem' }}>
+                <Calendar size={12} />
+                <span>Repository Age</span>
+              </div>
+              <div style={{ fontSize: 'var(--text-xs)', fontWeight: 700, color: 'var(--navy-950)', fontFamily: 'var(--font-mono)' }}>
+                {supporting.repositoryAgeFormatted.split(' ')[0]} yrs
+              </div>
+            </div>
+
+            <div style={{ backgroundColor: 'var(--surface-soft)', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-light)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: 'var(--navy-700)', fontSize: '0.7rem' }}>
+                <Users size={12} />
+                <span>Contributors</span>
+              </div>
+              <div style={{ fontSize: 'var(--text-sm)', fontWeight: 700, color: 'var(--navy-950)', fontFamily: 'var(--font-mono)' }}>
+                {supporting.totalContributors}+
+              </div>
+            </div>
+
+            <div style={{ backgroundColor: 'var(--surface-soft)', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-light)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: 'var(--navy-700)', fontSize: '0.7rem' }}>
+                <AlertCircle size={12} />
+                <span>Open Issues</span>
+              </div>
+              <div style={{ fontSize: 'var(--text-sm)', fontWeight: 700, color: 'var(--navy-950)', fontFamily: 'var(--font-mono)' }}>
+                {supporting.openIssues.toLocaleString()}
+              </div>
+            </div>
+
+            <div style={{ backgroundColor: 'var(--surface-soft)', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-light)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: 'var(--navy-700)', fontSize: '0.7rem' }}>
+                <Clock size={12} />
+                <span>Last Activity</span>
+              </div>
+              <div style={{ fontSize: 'var(--text-xs)', fontWeight: 700, color: 'var(--navy-950)', fontFamily: 'var(--font-mono)' }}>
+                {supporting.lastActivityDaysAgo === 0 ? 'Today' : `${supporting.lastActivityDaysAgo}d ago`}
+              </div>
+            </div>
+
+            <div style={{ backgroundColor: 'var(--surface-soft)', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-light)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: 'var(--navy-700)', fontSize: '0.7rem' }}>
+                <Tag size={12} />
+                <span>Releases Found</span>
+              </div>
+              <div style={{ fontSize: 'var(--text-sm)', fontWeight: 700, color: 'var(--navy-950)', fontFamily: 'var(--font-mono)' }}>
+                {supporting.releaseHistoryCount} tags
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* ----------------------------------------------------------------------
-          2. Live Maintenance Signals
-         ---------------------------------------------------------------------- */}
-      <div>
-        <div style={{ marginBottom: 'var(--space-3)' }}>
-          <h2 style={{ fontSize: 'var(--text-xl)', color: 'var(--navy-950)' }}>
-            Maintenance Signals (Live GitHub Data)
-          </h2>
-          <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)' }}>
-            Calculated from public commit records, maintainer distribution, and release intervals.
-          </p>
-        </div>
+      {/* ======================================================================
+          2. Capstone Research Distinction: Popularity vs. Sustainability
+         ====================================================================== */}
+      <PopularityVsSustainabilityCard
+        repoName={data.name}
+        owner={data.owner}
+        popularity={data.popularityMetrics}
+        metrics={metrics}
+        compositeScore={data.maintenanceContinuity.score}
+      />
 
-        <div
+      {/* ======================================================================
+          3. Multi-Tab Navigation for Output Evaluation
+         ====================================================================== */}
+      <div
+        style={{
+          display: 'flex',
+          gap: 'var(--space-2)',
+          borderBottom: '2px solid var(--border-light)',
+          paddingBottom: '2px',
+          overflowX: 'auto',
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => setActiveTab('metrics')}
+          className="btn btn-sm"
           style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-            gap: 'var(--space-4)',
+            borderRadius: 'var(--radius-md) var(--radius-md) 0 0',
+            border: 'none',
+            borderBottom: activeTab === 'metrics' ? '3px solid var(--accent-amber)' : '3px solid transparent',
+            backgroundColor: activeTab === 'metrics' ? 'var(--surface-primary)' : 'transparent',
+            color: activeTab === 'metrics' ? 'var(--navy-950)' : 'var(--text-secondary)',
+            fontWeight: activeTab === 'metrics' ? 700 : 500,
+            padding: '0.6rem 1.1rem',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.45rem',
+            fontSize: 'var(--text-sm)',
+            cursor: 'pointer',
           }}
         >
-          {/* Signal 1: Maintainer Distribution */}
-          <div className="card">
-            <div className="card-header">
-              <div className="card-title" style={{ fontSize: 'var(--text-base)' }}>
-                <Users size={16} color="var(--accent-amber-dark)" />
-                <span>Maintainer Distribution</span>
-              </div>
-              <span className={`badge ${data.maintainerDistribution.concentrationRisk === 'Low Concentration' ? 'badge-success' : data.maintainerDistribution.concentrationRisk === 'Moderate Concentration' ? 'badge-amber' : 'badge-warning'}`}>
-                {data.maintainerDistribution.concentrationRisk}
-              </span>
-            </div>
+          <Layers size={16} color={activeTab === 'metrics' ? 'var(--accent-amber-dark)' : 'var(--text-secondary)'} />
+          <span>9 Core Sustainability Metrics</span>
+          <span
+            style={{
+              fontSize: '0.6875rem',
+              backgroundColor: 'var(--accent-amber)',
+              color: 'var(--navy-950)',
+              padding: '0.1rem 0.4rem',
+              borderRadius: 'var(--radius-full)',
+              fontWeight: 700,
+            }}
+          >
+            {data.maintenanceContinuity.score}/100
+          </span>
+        </button>
 
-            <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', marginBottom: 'var(--space-3)' }}>
-              {data.maintainerDistribution.summary}
-            </p>
+        <button
+          type="button"
+          onClick={() => setActiveTab('charts')}
+          className="btn btn-sm"
+          style={{
+            borderRadius: 'var(--radius-md) var(--radius-md) 0 0',
+            border: 'none',
+            borderBottom: activeTab === 'charts' ? '3px solid var(--accent-amber)' : '3px solid transparent',
+            backgroundColor: activeTab === 'charts' ? 'var(--surface-primary)' : 'transparent',
+            color: activeTab === 'charts' ? 'var(--navy-950)' : 'var(--text-secondary)',
+            fontWeight: activeTab === 'charts' ? 700 : 500,
+            padding: '0.6rem 1.1rem',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.45rem',
+            fontSize: 'var(--text-sm)',
+            cursor: 'pointer',
+          }}
+        >
+          <PieChart size={16} color={activeTab === 'charts' ? 'var(--accent-amber-dark)' : 'var(--text-secondary)'} />
+          <span>Interactive Visualizations</span>
+        </button>
 
-            {/* Top Maintainers List */}
-            {data.maintainerDistribution.topContributors.length > 0 && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-                <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--navy-950)', textTransform: 'uppercase' }}>
-                  Top Commit Stewards
-                </div>
-                {data.maintainerDistribution.topContributors.slice(0, 4).map((contrib) => (
-                  <div
-                    key={contrib.login}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: 'var(--space-1) var(--space-2)',
-                      backgroundColor: 'var(--surface-soft)',
-                      borderRadius: 'var(--radius-sm)',
-                      fontSize: 'var(--text-xs)',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                      <img
-                        src={contrib.avatarUrl}
-                        alt={contrib.login}
-                        style={{ width: '20px', height: '20px', borderRadius: '50%' }}
-                      />
-                      <span className="font-mono">{contrib.login}</span>
-                    </div>
-                    <span style={{ fontWeight: 600, color: 'var(--navy-950)' }}>
-                      {contrib.sharePercentage}% ({contrib.contributions.toLocaleString()})
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Signal 2: Release Continuity */}
-          <div className="card">
-            <div className="card-header">
-              <div className="card-title" style={{ fontSize: 'var(--text-base)' }}>
-                <History size={16} color="var(--accent-amber-dark)" />
-                <span>Release Continuity</span>
-              </div>
-              <span className={`badge ${data.releaseContinuity.cadenceStability === 'Continuous & Predictable' ? 'badge-success' : 'badge-neutral'}`}>
-                {data.releaseContinuity.cadenceStability}
-              </span>
-            </div>
-
-            <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', marginBottom: 'var(--space-3)' }}>
-              {data.releaseContinuity.summary}
-            </p>
-
-            {/* Recent Releases List */}
-            {data.releaseContinuity.releasesList.length > 0 ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-                <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--navy-950)', textTransform: 'uppercase' }}>
-                  Recent Releases
-                </div>
-                {data.releaseContinuity.releasesList.slice(0, 3).map((rel) => (
-                  <div
-                    key={rel.id}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: 'var(--space-1) var(--space-2)',
-                      backgroundColor: 'var(--surface-soft)',
-                      borderRadius: 'var(--radius-sm)',
-                      fontSize: 'var(--text-xs)',
-                    }}
-                  >
-                    <a
-                      href={rel.htmlUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-mono"
-                      style={{ color: 'var(--accent-amber-dark)', textDecoration: 'none' }}
-                    >
-                      {rel.tagName}
-                    </a>
-                    <span style={{ color: 'var(--text-muted)' }}>{rel.daysAgo}d ago</span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div style={{ padding: 'var(--space-3)', backgroundColor: 'var(--surface-soft)', borderRadius: 'var(--radius-sm)', fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
-                No GitHub release tags identified.
-              </div>
-            )}
-          </div>
-
-          {/* Signal 3: Repository Activity Dynamics */}
-          <div className="card">
-            <div className="card-header">
-              <div className="card-title" style={{ fontSize: 'var(--text-base)' }}>
-                <Activity size={16} color="var(--accent-amber-dark)" />
-                <span>Activity Dynamics</span>
-              </div>
-              <span className={`badge ${data.repositoryActivity.activityState === 'Actively Maintained' ? 'badge-success' : 'badge-neutral'}`}>
-                {data.repositoryActivity.activityState}
-              </span>
-            </div>
-
-            <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', marginBottom: 'var(--space-3)' }}>
-              {data.repositoryActivity.summary}
-            </p>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--text-xs)', padding: 'var(--space-1) 0', borderBottom: '1px solid var(--border-subtle)' }}>
-                <span style={{ color: 'var(--text-secondary)' }}>Days since last push:</span>
-                <span className="font-mono" style={{ fontWeight: 600 }}>{data.repositoryActivity.daysSinceLastPush} day(s)</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--text-xs)', padding: 'var(--space-1) 0', borderBottom: '1px solid var(--border-subtle)' }}>
-                <span style={{ color: 'var(--text-secondary)' }}>Open Issues & Triage:</span>
-                <span className="font-mono" style={{ fontWeight: 600 }}>{data.repositoryActivity.openIssuesCount.toLocaleString()}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--text-xs)', padding: 'var(--space-1) 0' }}>
-                <span style={{ color: 'var(--text-secondary)' }}>Default Branch:</span>
-                <span className="font-mono" style={{ fontWeight: 600 }}>{data.repositoryActivity.defaultBranch}</span>
-              </div>
-            </div>
-          </div>
-        </div>
+        <button
+          type="button"
+          onClick={() => setActiveTab('ml')}
+          className="btn btn-sm"
+          style={{
+            borderRadius: 'var(--radius-md) var(--radius-md) 0 0',
+            border: 'none',
+            borderBottom: activeTab === 'ml' ? '3px solid var(--accent-amber)' : '3px solid transparent',
+            backgroundColor: activeTab === 'ml' ? 'var(--surface-primary)' : 'transparent',
+            color: activeTab === 'ml' ? 'var(--navy-950)' : 'var(--text-secondary)',
+            fontWeight: activeTab === 'ml' ? 700 : 500,
+            padding: '0.6rem 1.1rem',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.45rem',
+            fontSize: 'var(--text-sm)',
+            cursor: 'pointer',
+          }}
+        >
+          <Cpu size={16} color={activeTab === 'ml' ? 'var(--accent-amber-dark)' : 'var(--text-secondary)'} />
+          <span>ML Continuity Model &amp; Decisions</span>
+        </button>
       </div>
 
-      {/* ----------------------------------------------------------------------
-          3. Calculated Sustainability Indicators (Scores & Evidence)
-         ---------------------------------------------------------------------- */}
-      <div>
-        <div style={{ marginBottom: 'var(--space-3)' }}>
-          <h2 style={{ fontSize: 'var(--text-xl)', color: 'var(--navy-950)' }}>
-            Sustainability Indicators (Multi-Dimensional)
-          </h2>
-          <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)' }}>
-            Evaluated independently of popularity and star metrics.
-          </p>
-        </div>
+      {/* ======================================================================
+          TAB 1: 9 SUSTAINABILITY METRICS & SCORING FORMULATION
+         ====================================================================== */}
+      {activeTab === 'metrics' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+          {/* Nine Metrics Grid & Table */}
+          <NineMetricsGrid
+            metrics={metrics}
+            compositeScore={data.maintenanceContinuity.score}
+          />
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 'var(--space-4)' }}>
-          {data.sustainabilityIndicators.map((ind, idx) => (
-            <div key={ind.id} className="card">
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-2)' }}>
-                <span
+          {/* Transparent Score Calculation Section */}
+          <ScoreCalculationSection
+            breakdown={data.scoringBreakdown}
+            metrics={metrics}
+            continuityStatus={data.maintenanceContinuity.status}
+          />
+        </div>
+      )}
+
+      {/* ======================================================================
+          TAB 2: INTERACTIVE VISUALIZATIONS (RADAR, DONUT, MATRICES)
+         ====================================================================== */}
+      {activeTab === 'charts' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+          <SustainabilityVisualCharts
+            repoName={data.name}
+            owner={data.owner}
+            metrics={metrics}
+            popularity={data.popularityMetrics}
+            compositeScore={data.maintenanceContinuity.score}
+          />
+        </div>
+      )}
+
+      {/* ======================================================================
+          TAB 3: ML CONTINUITY MODEL & ADOPTION DECISION GUIDANCE
+         ====================================================================== */}
+      {activeTab === 'ml' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+          {/* ML Maintenance Continuity Predictor Card */}
+          <div
+            className="card"
+            style={{
+              padding: 'var(--space-6)',
+              border: '1px solid var(--border-light)',
+              boxShadow: 'var(--shadow-md)',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: 'var(--space-3)',
+                marginBottom: 'var(--space-4)',
+              }}
+            >
+              <div>
+                <div
                   style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.4rem',
                     fontSize: 'var(--text-xs)',
                     fontFamily: 'var(--font-mono)',
                     color: 'var(--accent-amber-dark)',
                     fontWeight: 600,
+                    textTransform: 'uppercase',
+                    marginBottom: 'var(--space-1)',
                   }}
                 >
-                  INDICATOR 0{idx + 1}
-                </span>
-                <span className={`badge ${getRatingBadgeClass(ind.rating)}`} style={{ fontSize: '0.6875rem' }}>
-                  {ind.rating} ({ind.score}/100)
-                </span>
+                  <Cpu size={13} />
+                  <span>Predictive Intelligence Engine</span>
+                </div>
+                <h3 style={{ fontSize: 'var(--text-lg)', fontWeight: 700, color: 'var(--navy-950)', margin: 0 }}>
+                  ML Maintenance Continuity Predictor
+                </h3>
               </div>
 
-              <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 600, color: 'var(--navy-950)', marginBottom: 'var(--space-2)' }}>
-                {ind.name}
-              </h3>
-
-              <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: 'var(--space-3)' }}>
-                {ind.scope}
-              </p>
-
-              <div
-                style={{
-                  padding: 'var(--space-2) var(--space-3)',
-                  backgroundColor: 'var(--surface-soft)',
-                  borderRadius: 'var(--radius-sm)',
-                  fontSize: '0.75rem',
-                  color: 'var(--navy-950)',
-                  fontFamily: 'var(--font-mono)',
-                  borderLeft: '2px solid var(--accent-amber)',
-                }}
-              >
-                {ind.evidence}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* ----------------------------------------------------------------------
-          4. Maintenance Continuity Projection
-         ---------------------------------------------------------------------- */}
-      {(() => {
-        const maintainerInd = data.sustainabilityIndicators.find((i) => i.id === 'maintainer_distribution') || data.sustainabilityIndicators[0];
-        const releaseInd = data.sustainabilityIndicators.find((i) => i.id === 'release_cadence') || data.sustainabilityIndicators[1];
-        const activityInd = data.sustainabilityIndicators.find((i) => i.id === 'activity_dynamics') || data.sustainabilityIndicators[2];
-        const governanceInd = data.sustainabilityIndicators.find((i) => i.id === 'governance_structure') || data.sustainabilityIndicators[3];
-
-        const mScore = maintainerInd?.score ?? 75;
-        const rScore = releaseInd?.score ?? 75;
-        const aScore = activityInd?.score ?? 75;
-        const gScore = governanceInd?.score ?? 75;
-
-        const mPts = (mScore * 0.3).toFixed(1);
-        const rPts = (rScore * 0.3).toFixed(1);
-        const aPts = (aScore * 0.25).toFixed(1);
-        const gPts = (gScore * 0.15).toFixed(1);
-
-        return (
-          <div className="card">
-            <div className="card-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
-              <div className="card-title">
-                <GitBranch size={18} color="var(--accent-amber-dark)" />
-                <span>Maintenance Continuity Projection</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
                 <span className={`badge ${getContinuityBadgeClass(data.maintenanceContinuity.status)}`}>
-                  {data.maintenanceContinuity.status} • Score: {data.maintenanceContinuity.score}/100
+                  {data.maintenanceContinuity.status} • {data.mlContinuityModel.confidenceScore}% Confidence
                 </span>
-                <button
-                  type="button"
-                  onClick={() => setShowCalculationDetails(!showCalculationDetails)}
-                  className="btn btn-outline btn-sm"
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '0.35rem',
-                    fontSize: 'var(--text-xs)',
-                    padding: '0.25rem 0.65rem',
-                    borderColor: showCalculationDetails ? 'var(--navy-900)' : 'var(--accent-amber)',
-                    backgroundColor: showCalculationDetails ? 'var(--navy-900)' : 'rgba(245, 158, 11, 0.08)',
-                    color: showCalculationDetails ? '#ffffff' : 'var(--navy-950)',
-                    cursor: 'pointer',
-                    transition: 'all var(--transition-fast)',
-                  }}
-                  title="View metric formulas and weights"
-                >
-                  <Calculator size={14} color={showCalculationDetails ? '#ffffff' : 'var(--accent-amber-dark)'} />
-                  <span>How we calculated</span>
-                  {showCalculationDetails ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
-                </button>
               </div>
             </div>
 
@@ -580,415 +515,165 @@ export function AssessmentShell({
               {data.maintenanceContinuity.explanation}
             </p>
 
-            <div
-              style={{
-                padding: 'var(--space-4)',
-                backgroundColor: 'var(--surface-soft)',
-                borderRadius: 'var(--radius-lg)',
-                border: '1px solid var(--border-light)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                flexWrap: 'wrap',
-                gap: 'var(--space-4)',
-              }}
-            >
-              <div>
-                <div style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--text-secondary)' }}>
-                  PROJECTED STEWARDSHIP CONFIDENCE
-                </div>
-                <div style={{ fontSize: 'var(--text-lg)', fontWeight: 700, color: 'var(--navy-950)' }}>
-                  {data.maintenanceContinuity.score}% Sustainability Confidence Index
-                </div>
+            {/* Model Feature Weights */}
+            <div style={{ marginBottom: 'var(--space-4)' }}>
+              <div
+                style={{
+                  fontSize: 'var(--text-xs)',
+                  fontWeight: 700,
+                  color: 'var(--navy-950)',
+                  textTransform: 'uppercase',
+                  marginBottom: 'var(--space-2)',
+                }}
+              >
+                Model Feature Importance Distribution ({data.mlContinuityModel.algorithm})
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
-                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', maxWidth: '360px' }}>
-                  Validated against historical project transition patterns. Indicates relative probability of uninterrupted release cycles.
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setShowCalculationDetails(!showCalculationDetails)}
-                  className="btn btn-outline btn-sm"
-                  style={{
-                    fontSize: '0.75rem',
-                    padding: '0.3rem 0.6rem',
-                    gap: '0.3rem',
-                  }}
-                >
-                  <Calculator size={13} />
-                  <span>{showCalculationDetails ? 'Hide Calculation' : 'How we calculated'}</span>
-                </button>
+
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+                  gap: 'var(--space-2)',
+                }}
+              >
+                {data.mlContinuityModel.featureImportance.map((feat) => (
+                  <div
+                    key={feat.feature}
+                    style={{
+                      padding: 'var(--space-2) var(--space-3)',
+                      backgroundColor: 'var(--surface-soft)',
+                      borderRadius: 'var(--radius-sm)',
+                      border: '1px solid var(--border-light)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      fontSize: 'var(--text-xs)',
+                    }}
+                  >
+                    <span style={{ fontWeight: 600, color: 'var(--navy-950)' }}>{feat.feature}</span>
+                    <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent-amber-dark)', fontWeight: 700 }}>
+                      {feat.weight}% model weight
+                    </span>
+                  </div>
+                ))}
               </div>
             </div>
 
-            {/* Interactive Calculation Breakdown */}
-            {showCalculationDetails && (
-              <div
-                style={{
-                  marginTop: 'var(--space-4)',
-                  padding: 'var(--space-5)',
-                  backgroundColor: 'var(--surface-soft)',
-                  borderRadius: 'var(--radius-lg)',
-                  border: '1px solid var(--accent-amber)',
-                }}
-              >
-                {/* Header */}
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'flex-start',
-                    marginBottom: 'var(--space-4)',
-                    flexWrap: 'wrap',
-                    gap: 'var(--space-2)',
-                  }}
-                >
-                  <div>
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.4rem',
-                        fontSize: 'var(--text-xs)',
-                        fontFamily: 'var(--font-mono)',
-                        color: 'var(--accent-amber-dark)',
-                        fontWeight: 600,
-                        textTransform: 'uppercase',
-                      }}
-                    >
-                      <HelpCircle size={14} />
-                      <span>Empirical Scoring Formula</span>
-                    </div>
-                    <h4 style={{ fontSize: 'var(--text-base)', fontWeight: 700, color: 'var(--navy-950)', marginTop: '0.2rem' }}>
-                      Multi-Signal Weighted Continuity Model
-                    </h4>
-                    <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', marginTop: '0.2rem', maxWidth: '640px' }}>
-                      Continuity score is calculated across four empirical dimensions derived directly from public GitHub activity signals.
-                    </p>
-                  </div>
-
-                  <div
-                    style={{
-                      padding: '0.4rem 0.8rem',
-                      backgroundColor: 'var(--surface-primary)',
-                      border: '1px solid var(--border-light)',
-                      borderRadius: 'var(--radius-md)',
-                      fontSize: 'var(--text-xs)',
-                      fontFamily: 'var(--font-mono)',
-                      color: 'var(--navy-950)',
-                      fontWeight: 600,
-                    }}
-                  >
-                    Composite Score: {data.maintenanceContinuity.score}/100
-                  </div>
-                </div>
-
-                {/* Formula Equation Banner */}
-                <div
-                  style={{
-                    backgroundColor: 'var(--navy-950)',
-                    color: 'var(--text-inverse)',
-                    padding: 'var(--space-3) var(--space-4)',
-                    borderRadius: 'var(--radius-md)',
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: '0.8125rem',
-                    marginBottom: 'var(--space-4)',
-                    overflowX: 'auto',
-                    lineHeight: 1.5,
-                  }}
-                >
-                  <span style={{ color: 'var(--accent-amber)' }}>Continuity Score</span> = ({mScore} × <span style={{ color: '#60a5fa' }}>0.30</span>) + ({rScore} × <span style={{ color: '#60a5fa' }}>0.30</span>) + ({aScore} × <span style={{ color: '#60a5fa' }}>0.25</span>) + ({gScore} × <span style={{ color: '#60a5fa' }}>0.15</span>) = <strong style={{ color: 'var(--accent-amber)' }}>{data.maintenanceContinuity.score}</strong>
-                </div>
-
-                {/* 4 Dimension Breakdown Cards */}
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-                    gap: 'var(--space-3)',
-                    marginBottom: 'var(--space-4)',
-                  }}
-                >
-                  {/* Maintainer Distribution */}
-                  <div
-                    style={{
-                      backgroundColor: 'var(--surface-primary)',
-                      padding: 'var(--space-3)',
-                      borderRadius: 'var(--radius-md)',
-                      border: '1px solid var(--border-light)',
-                    }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem' }}>
-                      <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--navy-950)' }}>
-                        Maintainer Distribution
-                      </span>
-                      <span
-                        style={{
-                          fontSize: '0.6875rem',
-                          fontFamily: 'var(--font-mono)',
-                          backgroundColor: 'rgba(96, 165, 250, 0.15)',
-                          color: '#2563eb',
-                          padding: '0.15rem 0.4rem',
-                          borderRadius: 'var(--radius-sm)',
-                          fontWeight: 600,
-                        }}
-                      >
-                        30% Weight
-                      </span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem', marginBottom: '0.3rem' }}>
-                      <span style={{ fontSize: 'var(--text-lg)', fontWeight: 700, color: 'var(--navy-950)' }}>{mScore}</span>
-                      <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)' }}>/ 100</span>
-                      <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--accent-amber-dark)', marginLeft: 'auto' }}>
-                        +{mPts} pts
-                      </span>
-                    </div>
-                    <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: 1.4, margin: 0 }}>
-                      Measures bus factor and contributor commit concentration. Top 3 hold {data.maintainerDistribution.top3SharePercentage}% share across {data.maintainerDistribution.totalContributorsSampled} sampled maintainers.
-                    </p>
-                  </div>
-
-                  {/* Release Cadence */}
-                  <div
-                    style={{
-                      backgroundColor: 'var(--surface-primary)',
-                      padding: 'var(--space-3)',
-                      borderRadius: 'var(--radius-md)',
-                      border: '1px solid var(--border-light)',
-                    }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem' }}>
-                      <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--navy-950)' }}>
-                        Release Cadence
-                      </span>
-                      <span
-                        style={{
-                          fontSize: '0.6875rem',
-                          fontFamily: 'var(--font-mono)',
-                          backgroundColor: 'rgba(96, 165, 250, 0.15)',
-                          color: '#2563eb',
-                          padding: '0.15rem 0.4rem',
-                          borderRadius: 'var(--radius-sm)',
-                          fontWeight: 600,
-                        }}
-                      >
-                        30% Weight
-                      </span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem', marginBottom: '0.3rem' }}>
-                      <span style={{ fontSize: 'var(--text-lg)', fontWeight: 700, color: 'var(--navy-950)' }}>{rScore}</span>
-                      <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)' }}>/ 100</span>
-                      <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--accent-amber-dark)', marginLeft: 'auto' }}>
-                        +{rPts} pts
-                      </span>
-                    </div>
-                    <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: 1.4, margin: 0 }}>
-                      Evaluates predictable intervals between versions. Latest release {data.releaseContinuity.latestRelease ? `${data.releaseContinuity.latestRelease.tagName} (${data.releaseContinuity.latestRelease.daysAgo}d ago)` : 'not tagged'}. Average cadence: {data.releaseContinuity.averageIntervalDays}d.
-                    </p>
-                  </div>
-
-                  {/* Activity Dynamics */}
-                  <div
-                    style={{
-                      backgroundColor: 'var(--surface-primary)',
-                      padding: 'var(--space-3)',
-                      borderRadius: 'var(--radius-md)',
-                      border: '1px solid var(--border-light)',
-                    }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem' }}>
-                      <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--navy-950)' }}>
-                        Activity Dynamics
-                      </span>
-                      <span
-                        style={{
-                          fontSize: '0.6875rem',
-                          fontFamily: 'var(--font-mono)',
-                          backgroundColor: 'rgba(96, 165, 250, 0.15)',
-                          color: '#2563eb',
-                          padding: '0.15rem 0.4rem',
-                          borderRadius: 'var(--radius-sm)',
-                          fontWeight: 600,
-                        }}
-                      >
-                        25% Weight
-                      </span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem', marginBottom: '0.3rem' }}>
-                      <span style={{ fontSize: 'var(--text-lg)', fontWeight: 700, color: 'var(--navy-950)' }}>{aScore}</span>
-                      <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)' }}>/ 100</span>
-                      <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--accent-amber-dark)', marginLeft: 'auto' }}>
-                        +{aPts} pts
-                      </span>
-                    </div>
-                    <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: 1.4, margin: 0 }}>
-                      Evaluates recency of code commits, default branch pushes, and issue backlog. Last push was {data.repositoryActivity.daysSinceLastPush}d ago ({data.repositoryActivity.openIssuesCount.toLocaleString()} open issues).
-                    </p>
-                  </div>
-
-                  {/* Governance & Structure */}
-                  <div
-                    style={{
-                      backgroundColor: 'var(--surface-primary)',
-                      padding: 'var(--space-3)',
-                      borderRadius: 'var(--radius-md)',
-                      border: '1px solid var(--border-light)',
-                    }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem' }}>
-                      <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--navy-950)' }}>
-                        Governance Structure
-                      </span>
-                      <span
-                        style={{
-                          fontSize: '0.6875rem',
-                          fontFamily: 'var(--font-mono)',
-                          backgroundColor: 'rgba(96, 165, 250, 0.15)',
-                          color: '#2563eb',
-                          padding: '0.15rem 0.4rem',
-                          borderRadius: 'var(--radius-sm)',
-                          fontWeight: 600,
-                        }}
-                      >
-                        15% Weight
-                      </span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem', marginBottom: '0.3rem' }}>
-                      <span style={{ fontSize: 'var(--text-lg)', fontWeight: 700, color: 'var(--navy-950)' }}>{gScore}</span>
-                      <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)' }}>/ 100</span>
-                      <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--accent-amber-dark)', marginLeft: 'auto' }}>
-                        +{gPts} pts
-                      </span>
-                    </div>
-                    <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: 1.4, margin: 0 }}>
-                      Evaluates SPDX open-source license legal safety ({data.governance.licenseName}) and organizational backing ({data.governance.ownerType === 'Organization' ? 'Organization backing' : 'Individual maintainer'}).
-                    </p>
-                  </div>
-                </div>
-
-                {/* Threshold Reference */}
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    flexWrap: 'wrap',
-                    gap: 'var(--space-2)',
-                    paddingTop: 'var(--space-3)',
-                    borderTop: '1px solid var(--border-light)',
-                    fontSize: 'var(--text-xs)',
-                    color: 'var(--text-secondary)',
-                  }}
-                >
-                  <div style={{ display: 'flex', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
-                    <span><strong>High Continuity:</strong> ≥ 78</span>
-                    <span><strong>Moderate Continuity:</strong> 60 - 77</span>
-                    <span><strong>Continuity at Risk:</strong> &lt; 60</span>
-                    <span><strong>Stalled / Dormant:</strong> Push &gt; 365d or Archived</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setShowCalculationDetails(false)}
-                    className="btn btn-outline btn-sm"
-                    style={{ fontSize: '0.75rem', padding: '0.2rem 0.6rem' }}
-                  >
-                    Close breakdown
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        );
-      })()}
-
-      {/* ----------------------------------------------------------------------
-          5. Adoption Assessment Panel
-         ---------------------------------------------------------------------- */}
-      <div
-        className="card"
-        style={{
-          backgroundColor: 'var(--navy-950)',
-          color: 'var(--text-inverse)',
-          borderColor: 'var(--navy-800)',
-        }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: 'var(--space-3)',
-            flexWrap: 'wrap',
-            gap: 'var(--space-2)',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+            {/* Review-II Presentation Snippet */}
             <div
               style={{
-                width: '10px',
-                height: '10px',
-                borderRadius: '50%',
-                backgroundColor: 'var(--accent-amber)',
+                padding: 'var(--space-3) var(--space-4)',
+                backgroundColor: 'var(--surface-soft)',
+                borderRadius: 'var(--radius-md)',
+                borderLeft: '3px solid var(--accent-amber)',
+                fontSize: 'var(--text-xs)',
+                color: 'var(--navy-950)',
+                lineHeight: 1.6,
               }}
-            />
-            <h3 style={{ fontSize: 'var(--text-lg)', fontWeight: 600, color: 'var(--text-inverse)' }}>
-              Adoption Assessment & Decision Guidance
-            </h3>
+            >
+              <strong>Review-II Script Cue:</strong> &ldquo;{data.mlContinuityModel.reviewIIPresentationSnippet}&rdquo;
+            </div>
           </div>
-          <span
+
+          {/* Adoption Assessment & Decision Guidance */}
+          <div
+            className="card"
             style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: 'var(--text-xs)',
-              color: 'var(--navy-950)',
-              backgroundColor: 'var(--accent-amber)',
-              fontWeight: 600,
-              padding: '0.2rem 0.6rem',
-              borderRadius: 'var(--radius-full)',
+              backgroundColor: 'var(--navy-950)',
+              color: 'var(--text-inverse)',
+              borderColor: 'var(--navy-800)',
+              padding: 'var(--space-6)',
             }}
           >
-            {data.adoptionAssessment.recommendation}
-          </span>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginBottom: 'var(--space-3)',
+                flexWrap: 'wrap',
+                gap: 'var(--space-2)',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                <div
+                  style={{
+                    width: '10px',
+                    height: '10px',
+                    borderRadius: '50%',
+                    backgroundColor: 'var(--accent-amber)',
+                  }}
+                />
+                <h3 style={{ fontSize: 'var(--text-lg)', fontWeight: 700, color: 'var(--text-inverse)', margin: 0 }}>
+                  Adoption Assessment &amp; Decision Guidance
+                </h3>
+              </div>
+              <span
+                style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 'var(--text-xs)',
+                  color: 'var(--navy-950)',
+                  backgroundColor: 'var(--accent-amber)',
+                  fontWeight: 700,
+                  padding: '0.25rem 0.75rem',
+                  borderRadius: 'var(--radius-full)',
+                }}
+              >
+                {data.adoptionAssessment.recommendation}
+              </span>
+            </div>
+
+            <p style={{ fontSize: 'var(--text-sm)', color: '#E2E8F0', lineHeight: 1.6, marginBottom: 'var(--space-4)' }}>
+              {data.adoptionAssessment.verdict}
+            </p>
+
+            <div style={{ marginBottom: 'var(--space-4)' }}>
+              <div
+                style={{
+                  fontSize: 'var(--text-xs)',
+                  fontWeight: 700,
+                  color: '#94A3B8',
+                  textTransform: 'uppercase',
+                  marginBottom: 'var(--space-2)',
+                }}
+              >
+                Key Evidence Observations:
+              </div>
+              <ul style={{ listStylePosition: 'inside', fontSize: 'var(--text-xs)', color: '#CBD5E1', lineHeight: 1.8, margin: 0, paddingLeft: 0 }}>
+                {data.adoptionAssessment.keyObservations.map((obs, i) => (
+                  <li key={i}>{obs}</li>
+                ))}
+              </ul>
+            </div>
+
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                gap: 'var(--space-3)',
+                paddingTop: 'var(--space-3)',
+                borderTop: '1px solid var(--navy-800)',
+                fontSize: 'var(--text-xs)',
+                color: '#94A3B8',
+              }}
+            >
+              <div>
+                <span style={{ color: '#ffffff', fontWeight: 600 }}>Repository:</span> {data.owner}/{data.name}
+              </div>
+              <div>
+                <span style={{ color: '#ffffff', fontWeight: 600 }}>License:</span> {data.governance.licenseName}
+              </div>
+              <div>
+                <span style={{ color: '#ffffff', fontWeight: 600 }}>Evidence Type:</span> Live GitHub REST &amp; ML Inference
+              </div>
+            </div>
+          </div>
         </div>
+      )}
 
-        <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-inverse)', lineHeight: 1.6, marginBottom: 'var(--space-4)' }}>
-          {data.adoptionAssessment.verdict}
-        </p>
-
-        <div style={{ marginBottom: 'var(--space-4)' }}>
-          <div style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 'var(--space-2)' }}>
-            Key Evidence Observations:
-          </div>
-          <ul style={{ listStylePosition: 'inside', fontSize: 'var(--text-xs)', color: 'var(--text-muted)', lineHeight: 1.8 }}>
-            {data.adoptionAssessment.keyObservations.map((obs, i) => (
-              <li key={i}>{obs}</li>
-            ))}
-          </ul>
-        </div>
-
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-            gap: 'var(--space-3)',
-            paddingTop: 'var(--space-3)',
-            borderTop: '1px solid var(--navy-800)',
-          }}
-        >
-          <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
-            <span style={{ color: 'var(--text-inverse)', fontWeight: 500 }}>Repository:</span> {data.owner}/{data.name}
-          </div>
-          <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
-            <span style={{ color: 'var(--text-inverse)', fontWeight: 500 }}>License:</span> {data.governance.licenseName}
-          </div>
-          <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
-            <span style={{ color: 'var(--text-inverse)', fontWeight: 500 }}>Evidence Type:</span> Live GitHub REST Verification
-          </div>
-        </div>
-      </div>
-
-      {/* ----------------------------------------------------------------------
-          6. Traceability Note
-         ---------------------------------------------------------------------- */}
+      {/* ======================================================================
+          4. Validation & Traceability Note
+         ====================================================================== */}
       <div
         style={{
           display: 'flex',
@@ -1004,7 +689,7 @@ export function AssessmentShell({
       >
         <ShieldCheck size={16} color="var(--accent-amber-dark)" style={{ flexShrink: 0 }} />
         <div>
-          <strong style={{ color: 'var(--text-primary)' }}>Validation Context:</strong> Assessment results should be interpreted within the validated evidence and operating conditions. Infrastructure adoption decisions should cross-reference organizational maintenance requirements.
+          <strong style={{ color: 'var(--text-primary)' }}>Validation Context:</strong> The 9 sustainability metrics are calculated directly from active repository commits, releases, and maintainer topology. Popularity measures (Stars, Forks, Watchers) are presented as supporting telemetry for research comparison.
         </div>
       </div>
     </div>

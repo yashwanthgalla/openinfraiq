@@ -75,6 +75,89 @@ export interface CalculatedIndicator {
   scope: string;
 }
 
+export type MetricRating = 'Strong' | 'Adequate' | 'Attention Needed' | 'High Risk';
+
+export interface CoreSustainabilityMetricItem {
+  id: string;
+  order: number; // 1 to 9
+  name: string; // e.g., 'Maintainer Concentration'
+  category: 'Maintainership' | 'Development Activity' | 'Release Continuity' | 'Issue & PR Velocity' | 'Community Health';
+  whatItMeasures: string; // verbatim from capstone requirement
+  rawValue: string; // e.g., '36.4%'
+  rawNumericValue: number;
+  rawUnit: string;
+  normalizedScore: number; // 0 - 100
+  weight: number; // e.g. 0.12 (12%)
+  weightedScore: number; // normalizedScore * weight
+  rating: MetricRating;
+  benchmark: string;
+  formula: string;
+  evidence: string;
+  scope: string;
+  iconName: string;
+}
+
+export interface SupportingRepositoryData {
+  stars: number;
+  forks: number;
+  watchers: number;
+  repositoryAgeDays: number;
+  repositoryAgeFormatted: string;
+  totalContributors: number;
+  openIssues: number;
+  repositoryLanguage: string;
+  license: string;
+  spdxId: string;
+  lastActivityDate: string;
+  lastActivityDaysAgo: number;
+  commitHistorySampleCount: number;
+  releaseHistoryCount: number;
+  isArchived: boolean;
+  defaultBranch: string;
+  ownerType: 'Organization' | 'User';
+}
+
+export interface PopularityMetricsData {
+  stars: number;
+  forks: number;
+  watchers: number;
+  popularityScore: number; // 0 - 100 benchmarked
+  popularityTier: 'Massive Visibility' | 'High Recognition' | 'Moderate Visibility' | 'Niche / Emerging';
+  divergenceAnalysis: string;
+}
+
+export interface ScoringBreakdownData {
+  compositeScore: number; // 0 - 100
+  totalWeightsPercent: number; // 100%
+  formulaString: string;
+  methodologyNotes: string[];
+  dimensionWeights: {
+    dimension: string;
+    order: number;
+    weightPercent: number;
+    metricScore: number;
+    pointsContributed: number;
+  }[];
+  thresholds: {
+    status: 'High Continuity' | 'Moderate Continuity' | 'Continuity at Risk' | 'Stalled / Dormant';
+    range: string;
+    description: string;
+  }[];
+}
+
+export interface MLContinuityModelData {
+  predictedStatus: 'High Continuity' | 'Moderate Continuity' | 'Continuity at Risk' | 'Stalled / Dormant';
+  confidenceScore: number; // e.g. 88%
+  algorithm: string; // 'Ensemble Random Forest & Gradient Boosted Tree'
+  featureImportance: {
+    feature: string;
+    importance: number;
+    weight: number;
+    direction: 'positive' | 'negative';
+  }[];
+  reviewIIPresentationSnippet: string;
+}
+
 export interface RealAssessmentResult {
   repositoryId: string;
   owner: string;
@@ -85,6 +168,22 @@ export interface RealAssessmentResult {
   status: AssessmentStatus;
   analyzedAt: string;
 
+  // The 9 Core Sustainability Metrics
+  coreMetrics: CoreSustainabilityMetricItem[];
+
+  // Supporting Repository Data (Stars, Forks, Watchers, Age, etc.)
+  supportingData: SupportingRepositoryData;
+
+  // Popularity vs Sustainability Distinction
+  popularityMetrics: PopularityMetricsData;
+
+  // Transparent Scoring Formulation
+  scoringBreakdown: ScoringBreakdownData;
+
+  // ML Maintenance Continuity Predictor
+  mlContinuityModel: MLContinuityModelData;
+
+  // Legacy analysis fields for backward compatibility
   maintainerDistribution: MaintainerDistributionAnalysis;
   releaseContinuity: ReleaseContinuityAnalysis;
   repositoryActivity: RepositoryActivityAnalysis;
