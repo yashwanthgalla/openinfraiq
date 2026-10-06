@@ -15,6 +15,7 @@ import {
   Menu,
   X,
   ChevronDown,
+  Sparkles,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth.tsx';
 
@@ -141,6 +142,16 @@ export function Navbar() {
           >
             <NavLink to="/" style={navLinkStyle} end>
               Home
+            </NavLink>
+
+            <NavLink to="/assess" style={navLinkStyle}>
+              <Layers size={15} />
+              Assess
+            </NavLink>
+
+            <NavLink to="/ai-finder" style={navLinkStyle}>
+              <Sparkles size={15} color="#D97706" />
+              AI Finder
             </NavLink>
 
             <NavLink to="/about" style={navLinkStyle}>
@@ -396,6 +407,22 @@ export function Navbar() {
               end
             >
               Home
+            </NavLink>
+            <NavLink
+              to="/assess"
+              onClick={() => setMobileMenuOpen(false)}
+              style={navLinkStyle}
+            >
+              <Layers size={16} />
+              Assess Repository
+            </NavLink>
+            <NavLink
+              to="/ai-finder"
+              onClick={() => setMobileMenuOpen(false)}
+              style={navLinkStyle}
+            >
+              <Sparkles size={16} color="#D97706" />
+              AI Project Finder
             </NavLink>
             <NavLink
               to="/about"

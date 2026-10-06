@@ -20,7 +20,7 @@ interface AuthContextType {
   authMode: AuthProviderMode;
   login: (email: string, password?: string) => Promise<{ success: boolean; error?: string }>;
   loginWithGoogle: () => Promise<{ success: boolean; error?: string }>;
-  register: (name: string, email: string, password?: string) => Promise<{ success: boolean; error?: string }>;
+  register: (name: string, email: string, password?: string, username?: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   updateProfile: (updates: UserProfileUpdate) => Promise<{ success: boolean; error?: string }>;
   resetPassword: (email: string) => Promise<{ success: boolean; error?: string }>;
@@ -67,10 +67,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const register = async (name: string, email: string, password?: string) => {
+  const register = async (name: string, email: string, password?: string, username?: string) => {
     setIsLoading(true);
     try {
-      const res = await createAccountWithEmail(name, email, password);
+      const res = await createAccountWithEmail(name, email, password, username);
       if (res.user) {
         setUser(res.user);
         setIsLoading(false);

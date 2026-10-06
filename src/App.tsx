@@ -10,6 +10,7 @@ import { ProtectedRoute } from './components/common/ProtectedRoute.tsx';
 // Pages
 import { LandingPage } from './pages/LandingPage.tsx';
 import { AssessPage } from './pages/AssessPage.tsx';
+import { AIFinderPage } from './pages/AIFinderPage.tsx';
 import { AboutPage } from './pages/AboutPage.tsx';
 import { DashboardPage } from './pages/DashboardPage.tsx';
 import { ProfilePage } from './pages/ProfilePage.tsx';
@@ -27,6 +28,7 @@ export default function App() {
             {/* Public Routes */}
             <Route path="/" element={<LandingPage />} />
             <Route path="/assess" element={<AssessPage />} />
+            <Route path="/ai-finder" element={<AIFinderPage />} />
             <Route path="/about" element={<AboutPage />} />
 
             {/* Redirect /saved and /history exclusively to the dedicated Profile section */}
@@ -64,7 +66,8 @@ export default function App() {
               }
             />
 
-            {/* Fallback 404 Route */}
+            {/* 404 Route & Fallback */}
+            <Route path="/404" element={<NotFoundPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Route>
         </Routes>

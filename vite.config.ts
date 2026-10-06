@@ -9,12 +9,26 @@ export default defineConfig({
     strictPort: false, // Automatically fallback to any available port if one is occupied
     cors: true, // Enable CORS across all origins and ports
     allowedHosts: true, // Accept requests from any hostname, IP, and port
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
   },
   preview: {
     host: '0.0.0.0',
     strictPort: false,
     cors: true,
     allowedHosts: true,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
   },
 })
 

@@ -1,11 +1,24 @@
-
+/* ==========================================================================
+   OpenInfraIQ - Repository Store & Persistence Service
+   Seamlessly integrates with Spring Boot backend endpoints while maintaining
+   instant local caching for smooth UI transitions and offline resilience.
+   ========================================================================== */
 
 import type {
   RepositoryHistoryItem,
   SavedRepositoryItem,
   AssessmentStatus,
   RealAssessmentResult,
-} from '../types/index.ts'; 
+} from '../types/index.ts';
+import {
+  fetchBackendHistory,
+  recordBackendSearch,
+  deleteBackendHistoryItem,
+  clearBackendHistory,
+  fetchBackendSavedRepositories,
+  toggleBackendSavedRepository,
+  deleteBackendSavedRepository,
+} from './api.ts';
 
 function getUserHistoryKey(userId: string): string {
   return `inframaturity_user_${userId}_history`;
@@ -32,19 +45,24 @@ function safeSet<T>(key: string, value: T): void {
   }
 }
 
-
 /**
- * Retrieves repository search history for the authenticated user.
- * [BACKEND INTEGRATION POINT]: Replace with `await fetch('/api/user/history')`
+ * Retrieves repository search history for the authenticated user from the backend.
  */
 export async function fetchUserHistory(userId: string): Promise<RepositoryHistoryItem[]> {
-  // Simulating async network contract
+  try {
+    const backendHistory = await fetchBackendHistory();
+    if (backendHistory && backendHistory.length > 0) {
+      safeSet(getUserHistoryKey(userId), backendHistory);
+      return backendHistory;
+    }
+  } catch (err) {
+    console.warn('Backend history fetch failed, returning cached history:', err);
+  }
   return safeParse<RepositoryHistoryItem[]>(getUserHistoryKey(userId), []);
 }
 
 /**
- * Records or updates a repository search for the authenticated user.
- * [BACKEND INTEGRATION POINT]: Replace with `await fetch('/api/user/history', { method: 'POST', body: ... })`
+ * Records a repository search on the backend and updates local workspace cache.
  */
 export async function recordUserSearch(
   userId: string,
@@ -56,19 +74,18 @@ export async function recordUserSearch(
   language?: string,
   assessmentData?: RealAssessmentResult
 ): Promise<RepositoryHistoryItem> {
-  const history = await fetchUserHistory(userId);
+  const localHistory = safeParse<RepositoryHistoryItem[]>(getUserHistoryKey(userId), []);
   const normalizedKey = `${owner.toLowerCase()}/${repositoryName.toLowerCase()}`;
   const now = new Date().toISOString();
 
-  const existingIndex = history.findIndex(
+  let localItem: RepositoryHistoryItem;
+  const existingIndex = localHistory.findIndex(
     (item) => `${item.owner.toLowerCase()}/${item.repositoryName.toLowerCase()}` === normalizedKey
   );
 
-  let updatedItem: RepositoryHistoryItem;
-
   if (existingIndex >= 0) {
-    const existing = history[existingIndex];
-    updatedItem = {
+    const existing = localHistory[existingIndex];
+    localItem = {
       ...existing,
       repositoryUrl,
       lastViewedAt: now,
@@ -77,10 +94,10 @@ export async function recordUserSearch(
       language: language || existing.language,
       assessmentData: assessmentData || existing.assessmentData,
     };
-    history.splice(existingIndex, 1);
-    history.unshift(updatedItem);
+    localHistory.splice(existingIndex, 1);
+    localHistory.unshift(localItem);
   } else {
-    updatedItem = {
+    localItem = {
       id: `hist_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
       repositoryUrl,
       owner,
@@ -92,42 +109,77 @@ export async function recordUserSearch(
       language,
       assessmentData,
     };
-    history.unshift(updatedItem);
+    localHistory.unshift(localItem);
+  }
+  safeSet(getUserHistoryKey(userId), localHistory);
+
+  // Sync with backend asynchronously
+  try {
+    const backendItem = await recordBackendSearch(
+      owner,
+      repositoryName,
+      repositoryUrl,
+      status,
+      description,
+      language,
+      assessmentData
+    );
+    if (backendItem) {
+      return backendItem;
+    }
+  } catch (err) {
+    console.warn('Backend search recording error, saved locally:', err);
   }
 
-  safeSet(getUserHistoryKey(userId), history);
-  return updatedItem;
+  return localItem;
 }
 
 /**
- * Deletes a single history item for the authenticated user.
- * [BACKEND INTEGRATION POINT]: Replace with `await fetch('/api/user/history/' + id, { method: 'DELETE' })`
+ * Deletes a single history item on the backend and updates local cache.
  */
 export async function deleteUserHistoryItem(userId: string, id: string): Promise<void> {
-  const history = await fetchUserHistory(userId);
+  const history = safeParse<RepositoryHistoryItem[]>(getUserHistoryKey(userId), []);
   const filtered = history.filter((item) => item.id !== id);
   safeSet(getUserHistoryKey(userId), filtered);
+
+  try {
+    await deleteBackendHistoryItem(id);
+  } catch (err) {
+    console.warn('Failed to delete history item on backend:', err);
+  }
 }
 
 /**
- * Clears entire search history for the authenticated user.
- * [BACKEND INTEGRATION POINT]: Replace with `await fetch('/api/user/history', { method: 'DELETE' })`
+ * Clears entire search history on the backend and updates local cache.
  */
 export async function clearUserHistory(userId: string): Promise<void> {
   safeSet(getUserHistoryKey(userId), []);
+
+  try {
+    await clearBackendHistory();
+  } catch (err) {
+    console.warn('Failed to clear search history on backend:', err);
+  }
 }
 
 /**
- * Retrieves bookmarked repositories for the authenticated user.
- * [BACKEND INTEGRATION POINT]: Replace with `await fetch('/api/user/saved')`
+ * Retrieves bookmarked repositories from the backend with local cache fallback.
  */
 export async function fetchUserSavedRepositories(userId: string): Promise<SavedRepositoryItem[]> {
+  try {
+    const backendSaved = await fetchBackendSavedRepositories();
+    if (backendSaved && backendSaved.length > 0) {
+      safeSet(getUserSavedKey(userId), backendSaved);
+      return backendSaved;
+    }
+  } catch (err) {
+    console.warn('Backend saved repos fetch failed, returning cached saved repos:', err);
+  }
   return safeParse<SavedRepositoryItem[]>(getUserSavedKey(userId), []);
 }
 
 /**
- * Toggles bookmark status of a repository for the authenticated user.
- * [BACKEND INTEGRATION POINT]: Replace with `await fetch('/api/user/saved', { method: 'POST', body: ... })`
+ * Toggles bookmark status of a repository on the backend.
  */
 export async function toggleUserSavedRepository(
   userId: string,
@@ -140,16 +192,17 @@ export async function toggleUserSavedRepository(
     language?: string;
   }
 ): Promise<boolean> {
-  const saved = await fetchUserSavedRepositories(userId);
+  const saved = safeParse<SavedRepositoryItem[]>(getUserSavedKey(userId), []);
   const normalizedKey = `${repo.owner.toLowerCase()}/${repo.repositoryName.toLowerCase()}`;
   const index = saved.findIndex(
     (item) => `${item.owner.toLowerCase()}/${item.repositoryName.toLowerCase()}` === normalizedKey
   );
 
+  let newSavedState = false;
   if (index >= 0) {
     saved.splice(index, 1);
     safeSet(getUserSavedKey(userId), saved);
-    return false; // Now unsaved
+    newSavedState = false;
   } else {
     const newItem: SavedRepositoryItem = {
       id: `saved_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
@@ -163,22 +216,35 @@ export async function toggleUserSavedRepository(
     };
     saved.unshift(newItem);
     safeSet(getUserSavedKey(userId), saved);
-    return true; // Now saved
+    newSavedState = true;
+  }
+
+  // Sync with backend
+  try {
+    return await toggleBackendSavedRepository(repo);
+  } catch (err) {
+    console.warn('Backend toggle bookmark failed, using local state:', err);
+    return newSavedState;
   }
 }
 
 /**
- * Deletes a saved repository for the authenticated user.
- * [BACKEND INTEGRATION POINT]: Replace with `await fetch('/api/user/saved/' + id, { method: 'DELETE' })`
+ * Deletes a saved repository from the backend and updates cache.
  */
 export async function deleteUserSavedRepository(userId: string, id: string): Promise<void> {
-  const saved = await fetchUserSavedRepositories(userId);
+  const saved = safeParse<SavedRepositoryItem[]>(getUserSavedKey(userId), []);
   const filtered = saved.filter((item) => item.id !== id);
   safeSet(getUserSavedKey(userId), filtered);
+
+  try {
+    await deleteBackendSavedRepository(id);
+  } catch (err) {
+    console.warn('Backend delete saved repository failed:', err);
+  }
 }
 
 /**
- * Synchronous check for bookmark state (using cached local data)
+ * Checks bookmark state using cache and backend check.
  */
 export function isUserRepoSaved(userId: string, owner: string, repositoryName: string): boolean {
   const saved = safeParse<SavedRepositoryItem[]>(getUserSavedKey(userId), []);

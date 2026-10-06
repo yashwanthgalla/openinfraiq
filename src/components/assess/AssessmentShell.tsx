@@ -11,6 +11,7 @@
    ========================================================================== */
 
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   ExternalLink,
   Bookmark,
@@ -30,13 +31,22 @@ import {
   Layers,
   Cpu,
   Tag,
+  Sparkles,
+  CheckCircle2,
+  AlertTriangle,
+  Lightbulb,
+  MessageSquare,
+  Bot,
+  Lock,
 } from 'lucide-react';
+import { useAuth } from '../../hooks/useAuth.tsx';
 import { StatusBadge } from '../common/StatusBadge.tsx';
 import { PopularityVsSustainabilityCard } from './PopularityVsSustainabilityCard.tsx';
 import { NineMetricsGrid } from './NineMetricsGrid.tsx';
 import { ScoreCalculationSection } from './ScoreCalculationSection.tsx';
 import { SustainabilityVisualCharts } from './SustainabilityVisualCharts.tsx';
-import type { RealAssessmentResult } from '../../types/index.ts';
+import { fetchAiRepositoryInsights } from '../../lib/api.ts';
+import type { RealAssessmentResult, AIInsights } from '../../types/index.ts';
 
 interface AssessmentShellProps {
   data: RealAssessmentResult;
@@ -51,7 +61,26 @@ export function AssessmentShell({
   onToggleSave,
   onReAssess,
 }: AssessmentShellProps) {
-  const [activeTab, setActiveTab] = useState<'metrics' | 'charts' | 'ml'>('metrics');
+  const { isAuthenticated } = useAuth();
+  const [activeTab, setActiveTab] = useState<'metrics' | 'charts' | 'ml' | 'ai'>('metrics');
+  const [aiInsights, setAiInsights] = useState<AIInsights | null>(data.aiInsights || null);
+  const [isGeneratingAi, setIsGeneratingAi] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+
+  const handleGenerateAi = async () => {
+    const repoId = data.internalRepositoryId || data.repositoryId;
+    if (!repoId) return;
+    setIsGeneratingAi(true);
+    setAiError(null);
+    try {
+      const result = await fetchAiRepositoryInsights(repoId);
+      setAiInsights(result);
+    } catch (err: unknown) {
+      setAiError((err as Error).message || 'Failed to generate AI insights.');
+    } finally {
+      setIsGeneratingAi(false);
+    }
+  };
 
   const getContinuityBadgeClass = (status: string) => {
     switch (status) {
@@ -421,6 +450,41 @@ export function AssessmentShell({
           <Cpu size={16} color={activeTab === 'ml' ? 'var(--accent-amber-dark)' : 'var(--text-secondary)'} />
           <span>ML Continuity Model &amp; Decisions</span>
         </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('ai')}
+          className="btn btn-sm"
+          style={{
+            borderRadius: 'var(--radius-md) var(--radius-md) 0 0',
+            border: 'none',
+            borderBottom: activeTab === 'ai' ? '3px solid var(--accent-amber)' : '3px solid transparent',
+            backgroundColor: activeTab === 'ai' ? 'var(--surface-primary)' : 'transparent',
+            color: activeTab === 'ai' ? 'var(--navy-950)' : 'var(--text-secondary)',
+            fontWeight: activeTab === 'ai' ? 700 : 500,
+            padding: '0.6rem 1.1rem',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.45rem',
+            fontSize: 'var(--text-sm)',
+            cursor: 'pointer',
+          }}
+        >
+          <Sparkles size={16} color={activeTab === 'ai' ? 'var(--accent-amber-dark)' : 'var(--text-secondary)'} />
+          <span>AI Repository Intelligence</span>
+          <span
+            style={{
+              fontSize: '0.625rem',
+              backgroundColor: activeTab === 'ai' ? 'var(--accent-amber)' : 'rgba(217, 119, 6, 0.15)',
+              color: 'var(--navy-950)',
+              padding: '0.1rem 0.45rem',
+              borderRadius: 'var(--radius-full)',
+              fontWeight: 700,
+            }}
+          >
+            Gemini
+          </span>
+        </button>
       </div>
 
       {/* ======================================================================
@@ -536,7 +600,7 @@ export function AssessmentShell({
                   gap: 'var(--space-2)',
                 }}
               >
-                {data.mlContinuityModel.featureImportance.map((feat) => (
+                {(data.mlContinuityModel?.featureImportance || []).map((feat) => (
                   <div
                     key={feat.feature}
                     style={{
@@ -640,7 +704,7 @@ export function AssessmentShell({
                 Key Evidence Observations:
               </div>
               <ul style={{ listStylePosition: 'inside', fontSize: 'var(--text-xs)', color: '#CBD5E1', lineHeight: 1.8, margin: 0, paddingLeft: 0 }}>
-                {data.adoptionAssessment.keyObservations.map((obs, i) => (
+                {(data.adoptionAssessment?.keyObservations || []).map((obs, i) => (
                   <li key={i}>{obs}</li>
                 ))}
               </ul>
@@ -668,6 +732,404 @@ export function AssessmentShell({
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ======================================================================
+          TAB 4: GOOGLE GEMINI AI REPOSITORY INTELLIGENCE
+         ====================================================================== */}
+      {activeTab === 'ai' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+          {!isAuthenticated ? (
+            <div
+              className="card"
+              style={{
+                padding: 'var(--space-8) var(--space-6)',
+                backgroundColor: 'var(--surface-primary)',
+                border: '2px solid var(--accent-amber)',
+                borderRadius: 'var(--radius-lg)',
+                boxShadow: 'var(--shadow-md)',
+                textAlign: 'center',
+              }}
+            >
+              <div style={{ display: 'inline-flex', padding: '0.75rem', backgroundColor: 'rgba(217, 119, 6, 0.1)', borderRadius: '50%', marginBottom: 'var(--space-3)' }}>
+                <Lock size={28} color="var(--accent-amber-dark)" />
+              </div>
+              <h3 style={{ margin: '0 0 var(--space-2)', fontSize: 'var(--text-xl)', fontWeight: 800, color: 'var(--navy-950)' }}>
+                Sign In to Unlock AI Repository Intelligence
+              </h3>
+              <p style={{ margin: '0 auto var(--space-5)', maxWidth: '540px', fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                Qualitative architectural assessments, maintenance risk diagnoses, and adoption recommendations powered by Google Gemini are exclusively available for registered members. All analyses are saved to your account in the backend.
+              </p>
+              <div style={{ display: 'flex', justifyContent: 'center', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
+                <Link to="/login" className="btn btn-primary" style={{ padding: '0.65rem 1.6rem', fontWeight: 700 }}>
+                  Sign In to Access AI
+                </Link>
+                <Link to="/register" className="btn btn-outline" style={{ padding: '0.65rem 1.6rem', fontWeight: 700 }}>
+                  Create Account
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* AI Banner & Controls Header */}
+              <div
+                className="card"
+                style={{
+                  padding: 'var(--space-5)',
+                  borderLeft: '4px solid #D97706',
+                  backgroundColor: 'var(--surface-primary)',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: 'var(--space-4)',
+                }}
+              >
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                <Sparkles size={18} color="#D97706" />
+                <h3 style={{ margin: 0, fontSize: 'var(--text-lg)', fontWeight: 700, color: 'var(--navy-950)' }}>
+                  Google Gemini AI Repository Intelligence
+                </h3>
+                <span
+                  style={{
+                    fontSize: '0.6875rem',
+                    backgroundColor: 'rgba(217, 119, 6, 0.12)',
+                    color: '#B45309',
+                    padding: '0.15rem 0.5rem',
+                    borderRadius: 'var(--radius-full)',
+                    fontWeight: 700,
+                    fontFamily: 'var(--font-mono)',
+                  }}
+                >
+                  {aiInsights?.modelName || 'gemini-1.5-flash'}
+                </span>
+              </div>
+              <p style={{ margin: 0, fontSize: 'var(--text-xs)', color: 'var(--text-secondary)' }}>
+                Deep qualitative reasoning across cloud architecture, maintenance risks, and adoption viability without hallucinating unevidenced technologies.
+              </p>
+            </div>
+
+            <button
+              onClick={handleGenerateAi}
+              disabled={isGeneratingAi}
+              className="btn btn-outline btn-sm"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
+            >
+              <RotateCw size={14} className={isGeneratingAi ? 'spin' : ''} />
+              <span>{isGeneratingAi ? 'Analyzing with Gemini...' : (aiInsights ? 'Re-analyze with Gemini' : 'Generate Gemini Intelligence')}</span>
+            </button>
+          </div>
+
+          {aiError && (
+            <div
+              className="card"
+              style={{
+                backgroundColor: 'rgba(239, 68, 68, 0.08)',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+                padding: 'var(--space-4)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 'var(--space-3)',
+                color: '#DC2626',
+                fontSize: 'var(--text-sm)',
+              }}
+            >
+              <AlertTriangle size={18} />
+              <span>{aiError}</span>
+            </div>
+          )}
+
+          {/* Core AI Intelligence Dashboard */}
+          {aiInsights ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
+              {/* Executive Summary & Adoption Verdict Grid */}
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+                  gap: 'var(--space-4)',
+                }}
+              >
+                {/* Executive Summary */}
+                <div
+                  className="card"
+                  style={{
+                    padding: 'var(--space-5)',
+                    backgroundColor: 'var(--surface-primary)',
+                    border: '1px solid var(--border-light)',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#B45309', marginBottom: 'var(--space-2)' }}>
+                    <Bot size={16} />
+                    <span style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                      Executive Summary
+                    </span>
+                  </div>
+                  <p style={{ margin: 0, fontSize: 'var(--text-sm)', lineHeight: 1.6, color: 'var(--text-primary)' }}>
+                    {aiInsights.executiveSummary}
+                  </p>
+                </div>
+
+                {/* Adoption Verdict Card */}
+                <div
+                  className="card"
+                  style={{
+                    padding: 'var(--space-5)',
+                    backgroundColor: 'var(--surface-primary)',
+                    border: '1px solid var(--border-light)',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#2563EB', marginBottom: 'var(--space-2)' }}>
+                    <ShieldCheck size={16} />
+                    <span style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                      Adoption Verdict &amp; Stance
+                    </span>
+                  </div>
+                  <div style={{ marginBottom: 'var(--space-2)' }}>
+                    <span
+                      className={`badge ${
+                        aiInsights.adoptionVerdict.toLowerCase().includes('recommend') && !aiInsights.adoptionVerdict.toLowerCase().includes('precaution') && !aiInsights.adoptionVerdict.toLowerCase().includes('risk')
+                          ? 'badge-success'
+                          : aiInsights.adoptionVerdict.toLowerCase().includes('precaution')
+                          ? 'badge-amber'
+                          : 'badge-warning'
+                      }`}
+                      style={{ fontSize: '0.8125rem', padding: '0.2rem 0.6rem' }}
+                    >
+                      {aiInsights.adoptionVerdict}
+                    </span>
+                  </div>
+                  <p style={{ margin: 0, fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                    Adoption guidance is generated by analyzing architectural maturity alongside OpenInfraIQ's quantitative sustainability composite ({data.maintenanceContinuity.score}/100).
+                  </p>
+                </div>
+              </div>
+
+              {/* Architectural Posture & Maintenance Risk Diagnosis Grid */}
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+                  gap: 'var(--space-4)',
+                }}
+              >
+                {/* Architectural Assessment */}
+                <div
+                  className="card"
+                  style={{
+                    padding: 'var(--space-5)',
+                    backgroundColor: 'var(--surface-primary)',
+                    border: '1px solid var(--border-light)',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#059669', marginBottom: 'var(--space-2)' }}>
+                    <Layers size={16} />
+                    <span style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                      Architectural &amp; Technical Interpretation
+                    </span>
+                  </div>
+                  <p style={{ margin: 0, fontSize: 'var(--text-sm)', lineHeight: 1.6, color: 'var(--text-primary)' }}>
+                    {aiInsights.architecturalAssessment}
+                  </p>
+                </div>
+
+                {/* Maintenance Risk Diagnosis */}
+                <div
+                  className="card"
+                  style={{
+                    padding: 'var(--space-5)',
+                    backgroundColor: 'var(--surface-primary)',
+                    border: '1px solid var(--border-light)',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#DC2626', marginBottom: 'var(--space-2)' }}>
+                    <AlertCircle size={16} />
+                    <span style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                      Maintenance Risk Diagnosis (9 Metrics Evaluated)
+                    </span>
+                  </div>
+                  <p style={{ margin: 0, fontSize: 'var(--text-sm)', lineHeight: 1.6, color: 'var(--text-primary)' }}>
+                    {aiInsights.riskAnalysis}
+                  </p>
+                </div>
+              </div>
+
+              {/* Strengths & Key Risks Section */}
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+                  gap: 'var(--space-4)',
+                }}
+              >
+                {/* Strengths */}
+                <div
+                  className="card"
+                  style={{
+                    padding: 'var(--space-5)',
+                    backgroundColor: 'var(--surface-primary)',
+                    border: '1px solid var(--border-light)',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#059669', marginBottom: 'var(--space-3)' }}>
+                    <CheckCircle2 size={16} />
+                    <span style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                      Key Architectural Strengths
+                    </span>
+                  </div>
+                  {aiInsights.strengths && aiInsights.strengths.length > 0 ? (
+                    <ul style={{ margin: 0, paddingLeft: '1.2rem', display: 'flex', flexDirection: 'column', gap: '0.4rem', fontSize: 'var(--text-xs)', color: 'var(--text-primary)' }}>
+                      {aiInsights.strengths.map((str, idx) => (
+                        <li key={idx} style={{ lineHeight: 1.5 }}>{str}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p style={{ margin: 0, fontSize: 'var(--text-xs)', color: 'var(--text-secondary)' }}>
+                      No highlighted strengths recorded.
+                    </p>
+                  )}
+                </div>
+
+                {/* Key Risks */}
+                <div
+                  className="card"
+                  style={{
+                    padding: 'var(--space-5)',
+                    backgroundColor: 'var(--surface-primary)',
+                    border: '1px solid var(--border-light)',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#D97706', marginBottom: 'var(--space-3)' }}>
+                    <AlertTriangle size={16} />
+                    <span style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                      Identified Operational Risks
+                    </span>
+                  </div>
+                  {aiInsights.keyRisks && aiInsights.keyRisks.length > 0 ? (
+                    <ul style={{ margin: 0, paddingLeft: '1.2rem', display: 'flex', flexDirection: 'column', gap: '0.4rem', fontSize: 'var(--text-xs)', color: 'var(--text-primary)' }}>
+                      {aiInsights.keyRisks.map((risk, idx) => (
+                        <li key={idx} style={{ lineHeight: 1.5 }}>{risk}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p style={{ margin: 0, fontSize: 'var(--text-xs)', color: 'var(--text-secondary)' }}>
+                      No elevated operational risks diagnosed.
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Actionable Recommendations */}
+              <div
+                className="card"
+                style={{
+                  padding: 'var(--space-5)',
+                  backgroundColor: 'var(--surface-primary)',
+                  border: '1px solid var(--border-light)',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#7C3AED', marginBottom: 'var(--space-3)' }}>
+                  <Lightbulb size={16} />
+                  <span style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    Actionable Platform Engineering Recommendations
+                  </span>
+                </div>
+                {aiInsights.recommendations && aiInsights.recommendations.length > 0 ? (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 'var(--space-3)' }}>
+                    {aiInsights.recommendations.map((rec, idx) => (
+                      <div
+                        key={idx}
+                        style={{
+                          backgroundColor: 'var(--surface-soft)',
+                          padding: 'var(--space-3)',
+                          borderRadius: 'var(--radius-md)',
+                          border: '1px solid var(--border-light)',
+                          fontSize: 'var(--text-xs)',
+                          lineHeight: 1.5,
+                          display: 'flex',
+                          gap: '0.5rem',
+                          alignItems: 'flex-start',
+                        }}
+                      >
+                        <span style={{ color: '#7C3AED', fontWeight: 700, fontFamily: 'var(--font-mono)' }}>0{idx + 1}.</span>
+                        <span>{rec}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p style={{ margin: 0, fontSize: 'var(--text-xs)', color: 'var(--text-secondary)' }}>
+                    No specific recommendations available.
+                  </p>
+                )}
+              </div>
+
+              {/* Community Sentiment & Issue Interpretation */}
+              <div
+                className="card"
+                style={{
+                  padding: 'var(--space-5)',
+                  backgroundColor: 'var(--surface-primary)',
+                  border: '1px solid var(--border-light)',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#2563EB', marginBottom: 'var(--space-2)' }}>
+                  <MessageSquare size={16} />
+                  <span style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    Community &amp; PR Turnaround Interpretation
+                  </span>
+                </div>
+                <p style={{ margin: 0, fontSize: 'var(--text-sm)', lineHeight: 1.6, color: 'var(--text-primary)' }}>
+                  {aiInsights.communitySentiment}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div
+              className="card"
+              style={{
+                padding: 'var(--space-12) var(--space-6)',
+                textAlign: 'center',
+                backgroundColor: 'var(--surface-primary)',
+                border: '1px dashed var(--border-subtle)',
+              }}
+            >
+              <Sparkles size={36} color="var(--accent-amber)" style={{ margin: '0 auto var(--space-3)' }} />
+              <h4 style={{ margin: '0 0 var(--space-2)', fontSize: 'var(--text-base)', fontWeight: 700, color: 'var(--navy-950)' }}>
+                On-Demand Google Gemini Analysis
+              </h4>
+              <p style={{ margin: '0 auto var(--space-5)', maxWidth: '480px', fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                Generate architectural interpretation, maintenance risk diagnosis, and platform adoption recommendations powered by Gemini.
+              </p>
+              <button
+                onClick={handleGenerateAi}
+                disabled={isGeneratingAi}
+                className="btn btn-primary btn-sm"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
+              >
+                <Sparkles size={14} />
+                <span>{isGeneratingAi ? 'Analyzing with Gemini...' : 'Generate Gemini Intelligence'}</span>
+              </button>
+            </div>
+          )}
+
+          {/* Architecture Separation Notice */}
+          <div
+            style={{
+              padding: 'var(--space-3) var(--space-4)',
+              backgroundColor: 'var(--surface-soft)',
+              borderRadius: 'var(--radius-md)',
+              border: '1px solid var(--border-light)',
+              fontSize: '0.6875rem',
+              color: 'var(--text-secondary)',
+              lineHeight: 1.5,
+            }}
+          >
+            <strong style={{ color: 'var(--navy-950)' }}>Architecture Separation Principle:</strong> The quantitative sustainability score ({data.maintenanceContinuity.score}/100) and the 9 Core Sustainability Metrics are calculated deterministically by OpenInfraIQ analytical engine. Qualitative analysis, architectural interpretation, and risk diagnosis are generated by Google Gemini using strictly evidenced repository data.
+          </div>
+            </>
+          )}
         </div>
       )}
 

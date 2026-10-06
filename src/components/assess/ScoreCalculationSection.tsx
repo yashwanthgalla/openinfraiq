@@ -274,7 +274,7 @@ export function ScoreCalculationSection({
               borderTop: '1px solid var(--border-subtle)',
             }}
           >
-            {breakdown.thresholds.map((tier) => {
+            {(breakdown.thresholds || []).map((tier) => {
               const isActive = tier.status === continuityStatus;
 
               return (

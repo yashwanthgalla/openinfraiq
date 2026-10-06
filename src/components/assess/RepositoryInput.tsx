@@ -9,6 +9,7 @@ import { parseRepositoryUrl } from '../../lib/validators.ts';
 
 interface RepositoryInputProps {
   onAnalyze: (owner: string, repo: string, normalizedUrl: string) => void;
+  onInvalid?: (rawInput: string, error: string) => void;
   isProcessing?: boolean;
 }
 
@@ -19,7 +20,7 @@ const EXAMPLE_REPOSITORIES = [
   { label: 'envoyproxy/envoy', url: 'https://github.com/envoyproxy/envoy' },
 ];
 
-export function RepositoryInput({ onAnalyze, isProcessing = false }: RepositoryInputProps) {
+export function RepositoryInput({ onAnalyze, onInvalid, isProcessing = false }: RepositoryInputProps) {
   const [inputUrl, setInputUrl] = useState('');
   const [validationError, setValidationError] = useState<string | null>(null);
 
@@ -29,7 +30,11 @@ export function RepositoryInput({ onAnalyze, isProcessing = false }: RepositoryI
 
     const parsed = parseRepositoryUrl(inputUrl);
     if (!parsed.isValid) {
-      setValidationError(parsed.errorMessage || 'Invalid repository URL.');
+      const err = parsed.errorMessage || 'Invalid repository URL.';
+      setValidationError(err);
+      if (onInvalid) {
+        onInvalid(inputUrl, err);
+      }
       return;
     }
 

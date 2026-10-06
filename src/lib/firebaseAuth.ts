@@ -9,6 +9,7 @@ import {
 } from 'firebase/auth';
 import { auth, googleProvider, firebaseConfig } from '../firebase.ts';
 import type { User, UserProfileUpdate } from '../types/index.ts';
+import { updateUserProfile, syncBackendUser } from './api.ts';
 
 export { firebaseConfig };
 
@@ -86,9 +87,25 @@ export async function authenticateWithEmail(
         uid: fbUser.uid,
         name: fbUser.displayName || normalizedEmail.split('@')[0],
         email: fbUser.email || normalizedEmail,
+        username: normalizedEmail.split('@')[0].replace(/[^a-zA-Z0-9_]/g, ''),
         createdAt: new Date().toISOString(),
       };
       localStorage.setItem(ACTIVE_SESSION_KEY, JSON.stringify(user));
+
+      // Persist / synchronize username, fullname, email, password into MySQL users table
+      try {
+        await syncBackendUser({
+          uid: fbUser.uid,
+          email: user.email,
+          name: user.name,
+          fullname: user.name,
+          username: user.username,
+          password: password,
+        });
+      } catch (e) {
+        console.warn('Backend login sync notification:', e);
+      }
+
       return { user };
     } catch (err: unknown) {
       const error = err as { code?: string; message?: string };
@@ -122,6 +139,21 @@ export async function authenticateWithEmail(
   }
 
   localStorage.setItem(ACTIVE_SESSION_KEY, JSON.stringify(found.user));
+
+  // Sync fallback user to backend
+  try {
+    await syncBackendUser({
+      uid: found.user.uid || found.user.id,
+      email: found.user.email,
+      name: found.user.name,
+      fullname: found.user.name,
+      username: found.user.username || found.user.email.split('@')[0],
+      password: password,
+    });
+  } catch (e) {
+    console.warn('Backend login sync notification:', e);
+  }
+
   return { user: found.user };
 }
 
@@ -144,6 +176,21 @@ export async function signInWithGoogle(): Promise<{ user: User | null; error?: s
         createdAt: new Date().toISOString(),
       };
       localStorage.setItem(ACTIVE_SESSION_KEY, JSON.stringify(user));
+
+      try {
+        await syncBackendUser({
+          uid: fbUser.uid,
+          email: user.email,
+          name: user.name,
+          fullname: user.name,
+          username: user.email.split('@')[0].replace(/[^a-zA-Z0-9_]/g, ''),
+          organization: user.organization,
+          role: user.role,
+        });
+      } catch (e) {
+        console.warn('Backend Google sign-in sync notification:', e);
+      }
+
       return { user };
     } catch (err: unknown) {
       const error = err as { code?: string; message?: string };
@@ -168,6 +215,21 @@ export async function signInWithGoogle(): Promise<{ user: User | null; error?: s
     createdAt: new Date().toISOString(),
   };
   localStorage.setItem(ACTIVE_SESSION_KEY, JSON.stringify(fallbackUser));
+
+  try {
+    await syncBackendUser({
+      uid: fallbackUser.uid || fallbackUser.id,
+      email: fallbackUser.email,
+      name: fallbackUser.name,
+      fullname: fallbackUser.name,
+      username: 'google_engineer',
+      organization: fallbackUser.organization,
+      role: fallbackUser.role,
+    });
+  } catch (e) {
+    console.warn('Backend fallback sign-in sync notification:', e);
+  }
+
   return { user: fallbackUser };
 }
 
@@ -177,9 +239,11 @@ export async function signInWithGoogle(): Promise<{ user: User | null; error?: s
 export async function createAccountWithEmail(
   name: string,
   email: string,
-  password?: string
+  password?: string,
+  username?: string
 ): Promise<{ user: User | null; error?: string }> {
   const normalizedEmail = email.trim().toLowerCase();
+  const effectiveUsername = (username && username.trim()) || normalizedEmail.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '');
 
   // Try Firebase SDK first
   if (auth && isFirebaseConfigured && password) {
@@ -197,10 +261,25 @@ export async function createAccountWithEmail(
         uid: cred.user.uid,
         name: name.trim() || normalizedEmail.split('@')[0],
         email: cred.user.email || normalizedEmail,
-        username: normalizedEmail.split('@')[0].replace(/[^a-z0-9]/g, ''),
+        username: effectiveUsername,
         createdAt: new Date().toISOString(),
       };
       localStorage.setItem(ACTIVE_SESSION_KEY, JSON.stringify(user));
+
+      // Persist username, fullname, email, and password into MySQL users table
+      try {
+        await syncBackendUser({
+          uid: cred.user.uid,
+          email: user.email,
+          name: user.name,
+          fullname: user.name,
+          username: effectiveUsername,
+          password: password,
+        });
+      } catch (e) {
+        console.warn('Backend user registration sync notification:', e);
+      }
+
       return { user };
     } catch (err: unknown) {
       const error = err as { code?: string; message?: string };
@@ -226,7 +305,7 @@ export async function createAccountWithEmail(
     uid: `uid_${Date.now()}`,
     name: name.trim(),
     email: normalizedEmail,
-    username: normalizedEmail.split('@')[0].replace(/[^a-z0-9]/g, ''),
+    username: effectiveUsername,
     createdAt: new Date().toISOString(),
   };
 
@@ -237,6 +316,21 @@ export async function createAccountWithEmail(
 
   saveRegisteredAccounts(accounts);
   localStorage.setItem(ACTIVE_SESSION_KEY, JSON.stringify(newUser));
+
+  // Sync fallback account to backend
+  try {
+    await syncBackendUser({
+      uid: newUser.uid || newUser.id,
+      email: newUser.email,
+      name: newUser.name,
+      fullname: newUser.name,
+      username: effectiveUsername,
+      password: password,
+    });
+  } catch (e) {
+    console.warn('Backend fallback user registration sync notification:', e);
+  }
+
   return { user: newUser };
 }
 
@@ -317,6 +411,18 @@ export async function updateSessionProfile(
   }
 
   localStorage.setItem(ACTIVE_SESSION_KEY, JSON.stringify(updated));
+
+  try {
+    await updateUserProfile({
+      name: updated.name,
+      email: updated.email,
+      username: updated.username,
+      organization: updated.organization,
+      role: updated.role,
+    });
+  } catch (err) {
+    console.warn('Backend user profile update notice:', err);
+  }
 
   const accounts = getRegisteredAccounts();
   const index = accounts.findIndex((a) => a.user.id === current.id);

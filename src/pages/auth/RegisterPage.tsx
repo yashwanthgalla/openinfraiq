@@ -44,10 +44,20 @@ export function RegisterPage() {
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
+  const [isUsernameCustom, setIsUsernameCustom] = useState(false);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const handleEmailChange = (val: string) => {
+    setEmail(val);
+    if (!isUsernameCustom) {
+      const derived = val.split('@')[0].toLowerCase().replace(/[^a-z0-9_]/g, '');
+      setUsername(derived);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,7 +83,8 @@ export function RegisterPage() {
       return;
     }
 
-    const result = await register(name, email, password);
+    const effectiveUsername = username.trim() || email.split('@')[0].toLowerCase().replace(/[^a-z0-9_]/g, '');
+    const result = await register(name, email, password, effectiveUsername);
     if (result.success) {
       navigate('/app', { replace: true });
     } else {
@@ -221,11 +232,29 @@ export function RegisterPage() {
               id="register-email"
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => handleEmailChange(e.target.value)}
               placeholder="engineer@domain.com"
               className="form-input"
               required
               autoComplete="email"
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label" htmlFor="register-username">
+              Username
+            </label>
+            <input
+              id="register-username"
+              type="text"
+              value={username}
+              onChange={(e) => {
+                setUsername(e.target.value);
+                setIsUsernameCustom(true);
+              }}
+              placeholder="e.g., alexchen"
+              className="form-input"
+              autoComplete="username"
             />
           </div>
 

@@ -200,6 +200,11 @@ export interface RealAssessmentResult {
     verdict: string;
     keyObservations: string[];
   };
+
+  // Google Gemini Qualitative Intelligence Layer
+  aiInsights?: AIInsights;
+  internalRepositoryId?: number;
+  analysisId?: number;
 }
 
 export interface Repository {
@@ -238,6 +243,7 @@ export interface UserProfileUpdate {
   email: string;
   username?: string;
   organization?: string;
+  role?: string;
 }
 
 export interface RepositoryHistoryItem {
@@ -279,4 +285,90 @@ export interface AssessmentDimension {
   shortDescription: string;
   scope: string;
   statusPlaceholder: string;
+}
+
+// ============================================================================
+// Google Gemini AI Intelligence Layer Types
+// ============================================================================
+
+export interface AIInsights {
+  executiveSummary: string;
+  architecturalAssessment: string;
+  riskAnalysis: string;
+  adoptionVerdict: string;
+  recommendations: string[];
+  communitySentiment: string;
+  keyRisks: string[];
+  strengths: string[];
+  confidenceScore?: number;
+  modelName?: string;
+  generatedAt?: string;
+  isAiAvailable?: boolean;
+}
+
+export interface AIRequirement {
+  description: string;
+  title?: string;
+}
+
+export interface AIRequirementResponse {
+  projectType: string;
+  category: string;
+  cloudProviders: string[];
+  requiredTechnologies: string[];
+  preferredTechnologies: string[];
+  requiredFeatures: string[];
+  monitoringRequirements: string[];
+  networkingRequirements: string[];
+  securityRequirements: string[];
+  databaseRequirements: string[];
+  deploymentRequirements: string[];
+  maintenancePreferences?: string[];
+  complexity: string;
+  keywords: string[];
+  rawQuery?: string;
+  summaryText?: string;
+}
+
+export type RequirementStatus = 'MATCHED' | 'PARTIALLY_MATCHED' | 'MISSING' | 'UNKNOWN';
+
+export interface AIMatchRequirementItem {
+  requirement: string;
+  status: RequirementStatus;
+  confidence?: number;
+  evidence?: string;
+}
+
+export interface AIRepositoryMatch {
+  repositoryId?: number;
+  owner: string;
+  name: string;
+  fullName: string;
+  htmlUrl: string;
+  description: string;
+  primaryLanguage: string;
+  starsCount: number;
+  forksCount: number;
+  daysSinceLastPush: number;
+  matchScore: number;
+  domainRelevanceScore?: number;
+  cloudRelevanceScore: number;
+  relevanceLabel?: string;
+  sustainabilityScore: number;
+  finalRankingScore: number;
+  category: string;
+  requirements: AIMatchRequirementItem[];
+  strengths: string[];
+  weaknesses: string[];
+  recommendations: string[];
+  summary: string;
+}
+
+export interface SavedAISearchItem {
+  id: number | string;
+  title: string;
+  description: string;
+  category: string;
+  createdAt: string;
+  structuredRequirements?: AIRequirementResponse;
 }

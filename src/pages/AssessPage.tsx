@@ -4,7 +4,7 @@
    and dynamic presentation of live sustainability results.
    ========================================================================== */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   Search,
@@ -17,11 +17,19 @@ import {
 } from 'lucide-react';
 import { RepositoryInput } from '../components/assess/RepositoryInput.tsx';
 import { AssessmentShell } from '../components/assess/AssessmentShell.tsx';
+import { NotFoundView } from '../components/common/NotFoundView.tsx';
 import { useRepositoryStore } from '../hooks/useRepositoryStore.ts';
 import { parseRepositoryUrl } from '../lib/validators.ts';
 import { analyzeRepository } from '../lib/analyzer.ts';
+import { analyzeRepositoryOnBackend } from '../lib/api.ts';
 import { getGitHubToken, setGitHubToken } from '../lib/githubApi.ts';
 import type { RealAssessmentResult } from '../types/index.ts';
+
+interface NotFoundState {
+  type: 'repo' | 'invalid_url';
+  query: string;
+  errorMessage: string;
+}
 
 export function AssessPage() {
   const [searchParams] = useSearchParams();
@@ -33,24 +41,66 @@ export function AssessPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentPhase, setCurrentPhase] = useState<string>('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [notFoundState, setNotFoundState] = useState<NotFoundState | null>(null);
 
   // Rate limit / token helper
   const [tokenInput, setTokenInput] = useState(getGitHubToken() || '');
   const [showTokenPrompt, setShowTokenPrompt] = useState(false);
+  const lastAssessedRef = useRef<string | null>(null);
 
   const startAssessment = useCallback(
     async (owner: string, repo: string, normalizedUrl: string) => {
+      const target = `${owner}/${repo}`.toLowerCase();
+      if (lastAssessedRef.current === target && isProcessing) {
+        return; // Prevent duplicate concurrent executions
+      }
+      lastAssessedRef.current = target;
       setIsProcessing(true);
       setErrorMessage(null);
+      setNotFoundState(null);
       setShowTokenPrompt(false);
       setCurrentPhase('Initializing GitHub repository query');
 
-      try {
-        const result = await analyzeRepository(owner, repo, (phase) => {
-          setCurrentPhase(phase);
-        });
+      const phases = [
+        'Querying GitHub repository metadata',
+        'Analyzing maintainer topology and contributor dispersion',
+        'Extracting release cadence and version history',
+        'Evaluating recent commit timeline and activity dynamics',
+        'Computing sustainability indicators & maintenance continuity',
+      ];
+      let phaseIndex = 0;
+      const phaseInterval = setInterval(() => {
+        phaseIndex = (phaseIndex + 1) % phases.length;
+        setCurrentPhase(phases[phaseIndex]);
+      }, 700);
 
+      try {
+        let result: RealAssessmentResult;
+        try {
+          result = await analyzeRepositoryOnBackend(owner, repo);
+        } catch (backendErr: unknown) {
+          const errMsg = (backendErr as Error)?.message || '';
+          if (
+            errMsg.includes('Failed to fetch') ||
+            errMsg.includes('NetworkError') ||
+            errMsg.includes('connection refused') ||
+            errMsg.includes('401') ||
+            errMsg.includes('Unauthorized') ||
+            errMsg.includes('authenticated')
+          ) {
+            console.warn('Backend unavailable or user unauthenticated, running client analyzer:', errMsg);
+            result = await analyzeRepository(owner, repo, (phase) => {
+              setCurrentPhase(phase);
+            });
+          } else {
+            throw backendErr;
+          }
+        }
+
+        clearInterval(phaseInterval);
+        setCurrentPhase('Computing sustainability indicators & maintenance continuity');
         setAssessmentResult(result);
+        setNotFoundState(null);
 
         // Record in workspace history with live description and language
         recordSearch(
@@ -62,18 +112,37 @@ export function AssessPage() {
           result.language
         );
       } catch (err: unknown) {
+        clearInterval(phaseInterval);
         const msg = (err as Error).message || 'Failed to complete repository assessment.';
-        setErrorMessage(msg);
-        if (msg.includes('rate limit')) {
-          setShowTokenPrompt(true);
+
+        const isNotFound =
+          msg.toLowerCase().includes('not found') ||
+          msg.includes('404') ||
+          msg.toLowerCase().includes('verify the owner and repository') ||
+          msg.toLowerCase().includes('zero matches');
+
+        if (isNotFound) {
+          setNotFoundState({
+            type: 'repo',
+            query: `${owner}/${repo}`,
+            errorMessage: msg,
+          });
+          setErrorMessage(null);
+          setAssessmentResult(null);
+        } else {
+          setErrorMessage(msg);
+          if (msg.includes('rate limit')) {
+            setShowTokenPrompt(true);
+          }
         }
         // Record as unavailable
         recordSearch(owner, repo, normalizedUrl, 'unavailable');
       } finally {
+        clearInterval(phaseInterval);
         setIsProcessing(false);
       }
     },
-    [recordSearch]
+    [recordSearch, isProcessing]
   );
 
   // Handle URL query parameter pre-population
@@ -81,10 +150,30 @@ export function AssessPage() {
     if (repoParam) {
       const parsed = parseRepositoryUrl(repoParam);
       if (parsed.isValid) {
-        startAssessment(parsed.owner, parsed.name, parsed.normalizedUrl);
+        const target = `${parsed.owner}/${parsed.name}`.toLowerCase();
+        if (lastAssessedRef.current !== target) {
+          startAssessment(parsed.owner, parsed.name, parsed.normalizedUrl);
+        }
+      } else {
+        setNotFoundState({
+          type: 'invalid_url',
+          query: repoParam,
+          errorMessage: parsed.errorMessage || 'Invalid repository address format.',
+        });
+        setAssessmentResult(null);
       }
     }
   }, [repoParam, startAssessment]);
+
+  const handleInvalidInput = (rawInput: string, err: string) => {
+    setNotFoundState({
+      type: 'invalid_url',
+      query: rawInput,
+      errorMessage: err,
+    });
+    setAssessmentResult(null);
+    setErrorMessage(null);
+  };
 
   const handleToggleSave = () => {
     if (!assessmentResult) return;
@@ -146,8 +235,31 @@ export function AssessPage() {
 
         {/* Repository Input Card */}
         <div style={{ marginBottom: 'var(--space-8)' }}>
-          <RepositoryInput onAnalyze={startAssessment} isProcessing={isProcessing} />
+          <RepositoryInput
+            onAnalyze={startAssessment}
+            onInvalid={handleInvalidInput}
+            isProcessing={isProcessing}
+          />
         </div>
+
+        {/* 404 Repository / URL Error Experience */}
+        {!isProcessing && notFoundState && (
+          <div style={{ marginBottom: 'var(--space-8)' }}>
+            <NotFoundView
+              type={notFoundState.type}
+              query={notFoundState.query}
+              errorMessage={notFoundState.errorMessage}
+              onRetry={(owner, name, normalizedUrl) => {
+                setNotFoundState(null);
+                startAssessment(owner, name, normalizedUrl);
+              }}
+              onClear={() => {
+                setNotFoundState(null);
+                setErrorMessage(null);
+              }}
+            />
+          </div>
+        )}
 
         {/* Live Processing State Animation */}
         {isProcessing && (
@@ -230,7 +342,7 @@ export function AssessPage() {
         )}
 
         {/* Error State Banner */}
-        {errorMessage && !isProcessing && (
+        {errorMessage && !isProcessing && !notFoundState && (
           <div
             className="alert alert-error"
             style={{ marginBottom: 'var(--space-8)' }}
@@ -275,7 +387,7 @@ export function AssessPage() {
         )}
 
         {/* Initial Empty State */}
-        {!isProcessing && !assessmentResult && !errorMessage && (
+        {!isProcessing && !assessmentResult && !errorMessage && !notFoundState && (
           <div
             className="card"
             style={{
