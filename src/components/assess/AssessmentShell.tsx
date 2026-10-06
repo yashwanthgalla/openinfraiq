@@ -38,6 +38,7 @@ import {
   MessageSquare,
   Bot,
   Lock,
+  Download,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth.tsx';
 import { StatusBadge } from '../common/StatusBadge.tsx';
@@ -46,6 +47,7 @@ import { NineMetricsGrid } from './NineMetricsGrid.tsx';
 import { ScoreCalculationSection } from './ScoreCalculationSection.tsx';
 import { SustainabilityVisualCharts } from './SustainabilityVisualCharts.tsx';
 import { fetchAiRepositoryInsights } from '../../lib/api.ts';
+import { GoogleGeminiLogo } from '../common/GoogleAILogo.tsx';
 import type { RealAssessmentResult, AIInsights } from '../../types/index.ts';
 
 interface AssessmentShellProps {
@@ -80,6 +82,81 @@ export function AssessmentShell({
     } finally {
       setIsGeneratingAi(false);
     }
+  };
+
+  const handleDownloadCsv = () => {
+    const sanitize = (val: unknown) => {
+      if (val === null || val === undefined) return '""';
+      const str = String(val).replace(/"/g, '""');
+      return `"${str}"`;
+    };
+
+    const rows: string[][] = [
+      ['=== OPENINFRAIQ REPOSITORY TELEMETRY & ASSESSMENT REPORT ===', '', '', '', '', '', '', '', ''],
+      ['Exported At', new Date().toISOString(), 'Assessment Status', data.status, '', '', '', '', ''],
+      ['', '', '', '', '', '', '', '', ''],
+      ['--- REPOSITORY METADATA ---', '', '', '', '', '', '', '', ''],
+      ['Repository Name', data.name, 'Full Path', `${data.owner}/${data.name}`, '', '', '', '', ''],
+      ['Owner / Organization', data.owner, 'Owner Type', data.supportingData.ownerType || 'Organization', '', '', '', '', ''],
+      ['GitHub URL', data.url, 'Primary Language', data.language, '', '', '', '', ''],
+      ['Description', data.description || '', 'Default Branch', data.supportingData.defaultBranch || 'main', '', '', '', '', ''],
+      ['License', data.governance?.licenseName || data.supportingData.license || 'Unknown', 'SPDX ID', data.supportingData.spdxId || '', '', '', '', '', ''],
+      ['Is Archived', String(data.supportingData.isArchived), 'Analyzed At', data.analyzedAt, '', '', '', '', ''],
+      ['', '', '', '', '', '', '', '', ''],
+      ['--- TELEMETRY METRICS ---', '', '', '', '', '', '', '', ''],
+      ['Stars', String(data.supportingData.stars), 'Forks', String(data.supportingData.forks), '', '', '', '', ''],
+      ['Watchers / Subscribers', String(data.supportingData.watchers), 'Total Contributors', `${data.supportingData.totalContributors}+`, '', '', '', '', ''],
+      ['Open Issues', String(data.supportingData.openIssues), 'Releases Found (Tags)', `${data.supportingData.releaseHistoryCount} tags`, '', '', '', '', ''],
+      ['Repository Age', data.supportingData.repositoryAgeFormatted, 'Repository Age (Days)', String(data.supportingData.repositoryAgeDays), '', '', '', '', ''],
+      ['Last Activity (Days Ago)', data.supportingData.lastActivityDaysAgo === 0 ? 'Today' : `${data.supportingData.lastActivityDaysAgo} days ago`, 'Last Activity Date', data.supportingData.lastActivityDate || '', '', '', '', '', ''],
+      ['Sampled Commits Count', String(data.supportingData.commitHistorySampleCount || 100), '', '', '', '', '', '', ''],
+      ['', '', '', '', '', '', '', '', ''],
+      ['--- POPULARITY VS SUSTAINABILITY DISTINCTION ---', '', '', '', '', '', '', '', ''],
+      ['Popularity Score', `${data.popularityMetrics?.popularityScore ?? 'N/A'} / 100`, 'Popularity Tier', data.popularityMetrics?.popularityTier ?? 'N/A', '', '', '', '', ''],
+      ['Divergence Analysis', data.popularityMetrics?.divergenceAnalysis ?? 'N/A', '', '', '', '', '', '', ''],
+      ['', '', '', '', '', '', '', '', ''],
+      ['--- CONTINUITY SCORING & MACHINE LEARNING INFERENCE ---', '', '', '', '', '', '', '', ''],
+      ['Composite Sustainability Score', `${data.maintenanceContinuity.score} / 100`, 'Continuity Health Status', data.maintenanceContinuity.status, '', '', '', '', ''],
+      ['Scoring Formula', data.scoringBreakdown?.formulaString || 'Weighted Linear Formulation', 'Continuity Explanation', data.maintenanceContinuity.explanation || '', '', '', '', '', ''],
+      ['ML Model Predicted Status', data.mlContinuityModel.predictedStatus, 'Model Confidence', `${data.mlContinuityModel.confidenceScore}%`, '', '', '', '', ''],
+      ['ML Model Algorithm', data.mlContinuityModel.algorithm, 'Review-II Cue', data.mlContinuityModel.reviewIIPresentationSnippet || '', '', '', '', '', ''],
+      ['Adoption Recommendation', data.adoptionAssessment.recommendation, 'Adoption Verdict', data.adoptionAssessment.verdict, '', '', '', '', ''],
+      ['', '', '', '', '', '', '', '', ''],
+      ['--- 9 CORE SUSTAINABILITY METRICS BREAKDOWN ---', '', '', '', '', '', '', '', ''],
+      ['Order', 'Metric Name', 'Category', 'Raw Value', 'Score (0-100)', 'Weight (%)', 'Weighted Points', 'Rating', 'Benchmark Threshold'],
+      ...(data.coreMetrics || []).map((m) => [
+        String(m.order),
+        m.name,
+        m.category,
+        m.rawValue,
+        String(m.normalizedScore),
+        `${Math.round(m.weight * 100)}%`,
+        m.weightedScore ? m.weightedScore.toFixed(2) : (m.normalizedScore * m.weight).toFixed(2),
+        m.rating,
+        m.benchmark,
+      ]),
+    ];
+
+    if (data.aiInsights) {
+      rows.push(
+        ['', '', '', '', '', '', '', '', ''],
+        ['--- GOOGLE GEMINI 3.5 FLASH AI REPOSITORY INTELLIGENCE ---', '', '', '', '', '', '', '', ''],
+        ['Model Name', data.aiInsights.modelName || 'gemini-3.5-flash', 'Generated At', data.aiInsights.generatedAt || '', '', '', '', '', ''],
+        ['Executive Summary', data.aiInsights.executiveSummary || '', 'Adoption Viability Verdict', data.aiInsights.adoptionVerdict || '', '', '', '', '', ''],
+        ['Architecture Assessment', data.aiInsights.architecturalAssessment || '', 'Community Sentiment', data.aiInsights.communitySentiment || '', '', '', '', '', '']
+      );
+    }
+
+    const csvContent = '\uFEFF' + rows.map((r) => r.map(sanitize).join(',')).join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const blobUrl = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.setAttribute('download', `${data.owner}-${data.name}-assessment.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(blobUrl);
   };
 
   const getContinuityBadgeClass = (status: string) => {
@@ -211,6 +288,16 @@ export function AssessmentShell({
           {/* Action Buttons */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
             <StatusBadge status={data.status} />
+
+            <button
+              onClick={handleDownloadCsv}
+              className="btn btn-outline btn-sm"
+              title="Download repository assessment report as CSV"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
+            >
+              <Download size={14} />
+              <span>Download CSV</span>
+            </button>
 
             <button
               onClick={onToggleSave}
@@ -359,133 +446,392 @@ export function AssessmentShell({
       />
 
       {/* ======================================================================
-          3. Multi-Tab Navigation for Output Evaluation
+          3. Assessment Modules: Sticky Sidebar Navigation + Full-Width Canvas
          ====================================================================== */}
-      <div
-        style={{
-          display: 'flex',
-          gap: 'var(--space-2)',
-          borderBottom: '2px solid var(--border-light)',
-          paddingBottom: '2px',
-          overflowX: 'auto',
-        }}
-      >
-        <button
-          type="button"
-          onClick={() => setActiveTab('metrics')}
-          className="btn btn-sm"
-          style={{
-            borderRadius: 'var(--radius-md) var(--radius-md) 0 0',
-            border: 'none',
-            borderBottom: activeTab === 'metrics' ? '3px solid var(--accent-amber)' : '3px solid transparent',
-            backgroundColor: activeTab === 'metrics' ? 'var(--surface-primary)' : 'transparent',
-            color: activeTab === 'metrics' ? 'var(--navy-950)' : 'var(--text-secondary)',
-            fontWeight: activeTab === 'metrics' ? 700 : 500,
-            padding: '0.6rem 1.1rem',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '0.45rem',
-            fontSize: 'var(--text-sm)',
-            cursor: 'pointer',
-          }}
-        >
-          <Layers size={16} color={activeTab === 'metrics' ? 'var(--accent-amber-dark)' : 'var(--text-secondary)'} />
-          <span>9 Core Sustainability Metrics</span>
-          <span
+      <div className="assessment-layout-grid">
+        {/* Left Sidebar */}
+        <aside className="assessment-sidebar-sticky">
+          {/* Module Navigation Card */}
+          <div
+            className="card"
             style={{
-              fontSize: '0.6875rem',
-              backgroundColor: 'var(--accent-amber)',
-              color: 'var(--navy-950)',
-              padding: '0.1rem 0.4rem',
-              borderRadius: 'var(--radius-full)',
-              fontWeight: 700,
+              padding: 'var(--space-4)',
+              border: '1px solid var(--border-light)',
+              boxShadow: 'var(--shadow-sm)',
+              backgroundColor: 'var(--surface-primary)',
             }}
           >
-            {data.maintenanceContinuity.score}/100
-          </span>
-        </button>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginBottom: 'var(--space-3)',
+                paddingBottom: 'var(--space-2)',
+                borderBottom: '1px solid var(--border-subtle)',
+              }}
+            >
+              <div
+                style={{
+                  fontSize: '0.6875rem',
+                  fontWeight: 700,
+                  fontFamily: 'var(--font-mono)',
+                  color: 'var(--text-secondary)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                }}
+              >
+                <Layers size={13} color="var(--accent-amber-dark)" />
+                <span>Evaluation Modules</span>
+              </div>
+              <span
+                style={{
+                  fontSize: '0.625rem',
+                  backgroundColor: 'var(--surface-soft)',
+                  color: 'var(--navy-950)',
+                  padding: '0.1rem 0.45rem',
+                  borderRadius: 'var(--radius-full)',
+                  fontWeight: 600,
+                  border: '1px solid var(--border-light)',
+                }}
+              >
+                4 Modules
+              </span>
+            </div>
 
-        <button
-          type="button"
-          onClick={() => setActiveTab('charts')}
-          className="btn btn-sm"
-          style={{
-            borderRadius: 'var(--radius-md) var(--radius-md) 0 0',
-            border: 'none',
-            borderBottom: activeTab === 'charts' ? '3px solid var(--accent-amber)' : '3px solid transparent',
-            backgroundColor: activeTab === 'charts' ? 'var(--surface-primary)' : 'transparent',
-            color: activeTab === 'charts' ? 'var(--navy-950)' : 'var(--text-secondary)',
-            fontWeight: activeTab === 'charts' ? 700 : 500,
-            padding: '0.6rem 1.1rem',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '0.45rem',
-            fontSize: 'var(--text-sm)',
-            cursor: 'pointer',
-          }}
-        >
-          <PieChart size={16} color={activeTab === 'charts' ? 'var(--accent-amber-dark)' : 'var(--text-secondary)'} />
-          <span>Interactive Visualizations</span>
-        </button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+              {/* Tab 1: 9 Core Sustainability Metrics */}
+              <button
+                type="button"
+                onClick={() => setActiveTab('metrics')}
+                className={`assessment-nav-button ${activeTab === 'metrics' ? 'active' : ''}`}
+              >
+                <div
+                  style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: 'var(--radius-md)',
+                    backgroundColor: activeTab === 'metrics' ? 'rgba(245, 158, 11, 0.18)' : 'var(--surface-soft)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                    marginTop: '2px',
+                  }}
+                >
+                  <Layers size={17} color={activeTab === 'metrics' ? 'var(--accent-amber-dark)' : 'var(--text-secondary)'} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.25rem', marginBottom: '2px' }}>
+                    <span style={{ fontSize: 'var(--text-sm)', fontWeight: activeTab === 'metrics' ? 700 : 600, color: 'var(--navy-950)' }}>
+                      9 Core Metrics
+                    </span>
+                    <span
+                      style={{
+                        fontSize: '0.6875rem',
+                        backgroundColor: 'var(--accent-amber)',
+                        color: 'var(--navy-950)',
+                        padding: '0.05rem 0.4rem',
+                        borderRadius: 'var(--radius-full)',
+                        fontWeight: 700,
+                      }}
+                    >
+                      {data.maintenanceContinuity.score}/100
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '0.6875rem', color: 'var(--text-secondary)', lineHeight: 1.3 }}>
+                    Formulation &amp; health features
+                  </div>
+                </div>
+              </button>
 
-        <button
-          type="button"
-          onClick={() => setActiveTab('ml')}
-          className="btn btn-sm"
-          style={{
-            borderRadius: 'var(--radius-md) var(--radius-md) 0 0',
-            border: 'none',
-            borderBottom: activeTab === 'ml' ? '3px solid var(--accent-amber)' : '3px solid transparent',
-            backgroundColor: activeTab === 'ml' ? 'var(--surface-primary)' : 'transparent',
-            color: activeTab === 'ml' ? 'var(--navy-950)' : 'var(--text-secondary)',
-            fontWeight: activeTab === 'ml' ? 700 : 500,
-            padding: '0.6rem 1.1rem',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '0.45rem',
-            fontSize: 'var(--text-sm)',
-            cursor: 'pointer',
-          }}
-        >
-          <Cpu size={16} color={activeTab === 'ml' ? 'var(--accent-amber-dark)' : 'var(--text-secondary)'} />
-          <span>ML Continuity Model &amp; Decisions</span>
-        </button>
+              {/* Tab 2: Interactive Visualizations */}
+              <button
+                type="button"
+                onClick={() => setActiveTab('charts')}
+                className={`assessment-nav-button ${activeTab === 'charts' ? 'active' : ''}`}
+              >
+                <div
+                  style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: 'var(--radius-md)',
+                    backgroundColor: activeTab === 'charts' ? 'rgba(245, 158, 11, 0.18)' : 'var(--surface-soft)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                    marginTop: '2px',
+                  }}
+                >
+                  <PieChart size={17} color={activeTab === 'charts' ? 'var(--accent-amber-dark)' : 'var(--text-secondary)'} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.25rem', marginBottom: '2px' }}>
+                    <span style={{ fontSize: 'var(--text-sm)', fontWeight: activeTab === 'charts' ? 700 : 600, color: 'var(--navy-950)' }}>
+                      Interactive Charts
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '0.6875rem', color: 'var(--text-secondary)', lineHeight: 1.3 }}>
+                    Radar, donut &amp; matrix graphs
+                  </div>
+                </div>
+              </button>
 
-        <button
-          type="button"
-          onClick={() => setActiveTab('ai')}
-          className="btn btn-sm"
-          style={{
-            borderRadius: 'var(--radius-md) var(--radius-md) 0 0',
-            border: 'none',
-            borderBottom: activeTab === 'ai' ? '3px solid var(--accent-amber)' : '3px solid transparent',
-            backgroundColor: activeTab === 'ai' ? 'var(--surface-primary)' : 'transparent',
-            color: activeTab === 'ai' ? 'var(--navy-950)' : 'var(--text-secondary)',
-            fontWeight: activeTab === 'ai' ? 700 : 500,
-            padding: '0.6rem 1.1rem',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '0.45rem',
-            fontSize: 'var(--text-sm)',
-            cursor: 'pointer',
-          }}
-        >
-          <Sparkles size={16} color={activeTab === 'ai' ? 'var(--accent-amber-dark)' : 'var(--text-secondary)'} />
-          <span>AI Repository Intelligence</span>
-          <span
+              {/* Tab 3: ML Continuity Model & Decisions */}
+              <button
+                type="button"
+                onClick={() => setActiveTab('ml')}
+                className={`assessment-nav-button ${activeTab === 'ml' ? 'active' : ''}`}
+              >
+                <div
+                  style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: 'var(--radius-md)',
+                    backgroundColor: activeTab === 'ml' ? 'rgba(245, 158, 11, 0.18)' : 'var(--surface-soft)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                    marginTop: '2px',
+                  }}
+                >
+                  <Cpu size={17} color={activeTab === 'ml' ? 'var(--accent-amber-dark)' : 'var(--text-secondary)'} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.25rem', marginBottom: '2px' }}>
+                    <span style={{ fontSize: 'var(--text-sm)', fontWeight: activeTab === 'ml' ? 700 : 600, color: 'var(--navy-950)' }}>
+                      ML Model &amp; Decisions
+                    </span>
+                    <span
+                      className={`badge ${getContinuityBadgeClass(data.maintenanceContinuity.status)}`}
+                      style={{ fontSize: '0.625rem', padding: '0.05rem 0.35rem' }}
+                    >
+                      {data.maintenanceContinuity.status.split(' ')[0]}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '0.6875rem', color: 'var(--text-secondary)', lineHeight: 1.3 }}>
+                    Abandonment risk &amp; advice
+                  </div>
+                </div>
+              </button>
+
+              {/* Tab 4: AI Repository Intelligence */}
+              <button
+                type="button"
+                onClick={() => setActiveTab('ai')}
+                className={`assessment-nav-button ${activeTab === 'ai' ? 'active' : ''}`}
+              >
+                <div
+                  style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: 'var(--radius-md)',
+                    backgroundColor: activeTab === 'ai' ? 'rgba(245, 158, 11, 0.18)' : 'var(--surface-soft)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                    marginTop: '2px',
+                  }}
+                >
+                  <Sparkles size={17} color={activeTab === 'ai' ? 'var(--accent-amber-dark)' : 'var(--text-secondary)'} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.25rem', marginBottom: '2px' }}>
+                    <span style={{ fontSize: 'var(--text-sm)', fontWeight: activeTab === 'ai' ? 700 : 600, color: 'var(--navy-950)' }}>
+                      AI Intelligence
+                    </span>
+                    <span
+                      style={{
+                        fontSize: '0.625rem',
+                        backgroundColor: activeTab === 'ai' ? 'var(--accent-amber)' : 'rgba(217, 119, 6, 0.15)',
+                        color: 'var(--navy-950)',
+                        padding: '0.05rem 0.45rem',
+                        borderRadius: 'var(--radius-full)',
+                        fontWeight: 700,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.2rem',
+                      }}
+                    >
+                      <GoogleGeminiLogo size={10} />
+                      <span>Gemini 3.5</span>
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '0.6875rem', color: 'var(--text-secondary)', lineHeight: 1.3 }}>
+                    Qualitative reasoning &amp; synthesis
+                  </div>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          {/* Quick Repository Overview & Actions Card */}
+          <div
+            className="card"
             style={{
-              fontSize: '0.625rem',
-              backgroundColor: activeTab === 'ai' ? 'var(--accent-amber)' : 'rgba(217, 119, 6, 0.15)',
-              color: 'var(--navy-950)',
-              padding: '0.1rem 0.45rem',
-              borderRadius: 'var(--radius-full)',
-              fontWeight: 700,
+              padding: 'var(--space-4)',
+              border: '1px solid var(--border-light)',
+              boxShadow: 'var(--shadow-sm)',
+              backgroundColor: 'var(--surface-primary)',
             }}
           >
-            Gemini
-          </span>
-        </button>
-      </div>
+            <div
+              style={{
+                fontSize: '0.6875rem',
+                fontWeight: 700,
+                fontFamily: 'var(--font-mono)',
+                color: 'var(--text-secondary)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+                marginBottom: 'var(--space-3)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <span>Repository Overview</span>
+              <StatusBadge status={data.status} />
+            </div>
+
+            {/* Score Ring / Health Metric */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 'var(--space-3)',
+                padding: 'var(--space-3)',
+                backgroundColor: 'var(--surface-soft)',
+                borderRadius: 'var(--radius-md)',
+                border: '1px solid var(--border-light)',
+                marginBottom: 'var(--space-3)',
+              }}
+            >
+              <div
+                style={{
+                  width: '46px',
+                  height: '46px',
+                  borderRadius: '50%',
+                  backgroundColor: 'var(--navy-950)',
+                  color: 'var(--accent-amber)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontWeight: 800,
+                  fontSize: 'var(--text-sm)',
+                  fontFamily: 'var(--font-mono)',
+                  boxShadow: '0 2px 6px rgba(11, 18, 32, 0.15)',
+                  flexShrink: 0,
+                }}
+              >
+                {data.maintenanceContinuity.score}
+              </div>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ fontSize: '0.6875rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                  Continuity Health
+                </div>
+                <div style={{ marginTop: '2px' }}>
+                  <span className={`badge ${getContinuityBadgeClass(data.maintenanceContinuity.status)}`} style={{ fontSize: '0.6875rem' }}>
+                    {data.maintenanceContinuity.status}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Telemetry Grid */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: 'var(--space-2)',
+                marginBottom: 'var(--space-4)',
+                fontSize: 'var(--text-xs)',
+              }}
+            >
+              <div style={{ padding: '0.4rem 0.5rem', backgroundColor: 'var(--surface-soft)', borderRadius: 'var(--radius-sm)' }}>
+                <div style={{ color: 'var(--text-secondary)', fontSize: '0.625rem' }}>Stars</div>
+                <div style={{ fontWeight: 700, color: 'var(--navy-950)', fontFamily: 'var(--font-mono)' }}>
+                  {supporting.stars.toLocaleString()}
+                </div>
+              </div>
+              <div style={{ padding: '0.4rem 0.5rem', backgroundColor: 'var(--surface-soft)', borderRadius: 'var(--radius-sm)' }}>
+                <div style={{ color: 'var(--text-secondary)', fontSize: '0.625rem' }}>Forks</div>
+                <div style={{ fontWeight: 700, color: 'var(--navy-950)', fontFamily: 'var(--font-mono)' }}>
+                  {supporting.forks.toLocaleString()}
+                </div>
+              </div>
+              <div style={{ padding: '0.4rem 0.5rem', backgroundColor: 'var(--surface-soft)', borderRadius: 'var(--radius-sm)' }}>
+                <div style={{ color: 'var(--text-secondary)', fontSize: '0.625rem' }}>Contributors</div>
+                <div style={{ fontWeight: 700, color: 'var(--navy-950)', fontFamily: 'var(--font-mono)' }}>
+                  {supporting.totalContributors}+
+                </div>
+              </div>
+              <div style={{ padding: '0.4rem 0.5rem', backgroundColor: 'var(--surface-soft)', borderRadius: 'var(--radius-sm)' }}>
+                <div style={{ color: 'var(--text-secondary)', fontSize: '0.625rem' }}>Last Activity</div>
+                <div style={{ fontWeight: 700, color: 'var(--navy-950)', fontFamily: 'var(--font-mono)' }}>
+                  {supporting.lastActivityDaysAgo === 0 ? 'Today' : `${supporting.lastActivityDaysAgo}d ago`}
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Actions in Sidebar */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+              <button
+                type="button"
+                onClick={handleDownloadCsv}
+                className="btn btn-outline btn-sm"
+                style={{ width: '100%', justifyContent: 'center', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
+                title="Download repository assessment report as CSV"
+              >
+                <Download size={14} />
+                <span>Download Report (CSV)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={onToggleSave}
+                className={`btn ${isSaved ? 'btn-secondary' : 'btn-outline'} btn-sm`}
+                style={{ width: '100%', justifyContent: 'center' }}
+              >
+                {isSaved ? <BookmarkCheck size={14} color="var(--accent-amber)" /> : <Bookmark size={14} />}
+                <span>{isSaved ? 'Saved in Workspace' : 'Bookmark Repository'}</span>
+              </button>
+
+              <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                {onReAssess && (
+                  <button
+                    type="button"
+                    onClick={onReAssess}
+                    className="btn btn-outline btn-sm"
+                    style={{ flex: 1, justifyContent: 'center' }}
+                    title="Refresh live analysis from GitHub"
+                  >
+                    <RotateCw size={13} />
+                    <span>Re-assess</span>
+                  </button>
+                )}
+                <a
+                  href={data.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn-outline btn-sm"
+                  style={{ flex: 1, justifyContent: 'center', textDecoration: 'none' }}
+                >
+                  <ExternalLink size={13} />
+                  <span>GitHub</span>
+                </a>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        {/* Right Main Content Canvas */}
+        <main style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
 
       {/* ======================================================================
           TAB 1: 9 SUSTAINABILITY METRICS & SCORING FORMULATION
@@ -787,27 +1133,28 @@ export function AssessmentShell({
                 }}
               >
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                <Sparkles size={18} color="#D97706" />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem', flexWrap: 'wrap' }}>
+                <GoogleGeminiLogo size={22} />
                 <h3 style={{ margin: 0, fontSize: 'var(--text-lg)', fontWeight: 700, color: 'var(--navy-950)' }}>
-                  Google Gemini AI Repository Intelligence
+                  Google Gemini 3.5 Flash AI Repository Intelligence
                 </h3>
                 <span
                   style={{
                     fontSize: '0.6875rem',
-                    backgroundColor: 'rgba(217, 119, 6, 0.12)',
-                    color: '#B45309',
+                    backgroundColor: 'rgba(66, 133, 244, 0.1)',
+                    color: '#1D4ED8',
                     padding: '0.15rem 0.5rem',
                     borderRadius: 'var(--radius-full)',
                     fontWeight: 700,
                     fontFamily: 'var(--font-mono)',
+                    border: '1px solid rgba(66, 133, 244, 0.25)',
                   }}
                 >
-                  {aiInsights?.modelName || 'gemini-1.5-flash'}
+                  {aiInsights?.modelName || 'gemini-3.5-flash'}
                 </span>
               </div>
               <p style={{ margin: 0, fontSize: 'var(--text-xs)', color: 'var(--text-secondary)' }}>
-                Deep qualitative reasoning across cloud architecture, maintenance risks, and adoption viability without hallucinating unevidenced technologies.
+                Deep qualitative reasoning across cloud architecture, maintenance risks, and adoption viability powered by Google Gemini.
               </p>
             </div>
 
@@ -815,10 +1162,10 @@ export function AssessmentShell({
               onClick={handleGenerateAi}
               disabled={isGeneratingAi}
               className="btn btn-outline btn-sm"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem' }}
             >
               <RotateCw size={14} className={isGeneratingAi ? 'spin' : ''} />
-              <span>{isGeneratingAi ? 'Analyzing with Gemini...' : (aiInsights ? 'Re-analyze with Gemini' : 'Generate Gemini Intelligence')}</span>
+              <span>{isGeneratingAi ? 'Analyzing with Google 3.5 Flash...' : (aiInsights ? 'Re-analyze with Google 3.5 Flash' : 'Generate Google 3.5 Flash Intelligence')}</span>
             </button>
           </div>
 
@@ -1095,12 +1442,14 @@ export function AssessmentShell({
                 border: '1px dashed var(--border-subtle)',
               }}
             >
-              <Sparkles size={36} color="var(--accent-amber)" style={{ margin: '0 auto var(--space-3)' }} />
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 'var(--space-3)' }}>
+                <GoogleGeminiLogo size={36} />
+              </div>
               <h4 style={{ margin: '0 0 var(--space-2)', fontSize: 'var(--text-base)', fontWeight: 700, color: 'var(--navy-950)' }}>
-                On-Demand Google Gemini Analysis
+                On-Demand Google 3.5 Flash Analysis
               </h4>
               <p style={{ margin: '0 auto var(--space-5)', maxWidth: '480px', fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                Generate architectural interpretation, maintenance risk diagnosis, and platform adoption recommendations powered by Gemini.
+                Generate architectural interpretation, maintenance risk diagnosis, and platform adoption recommendations powered by Google Gemini 3.5 Flash.
               </p>
               <button
                 onClick={handleGenerateAi}
@@ -1108,8 +1457,8 @@ export function AssessmentShell({
                 className="btn btn-primary btn-sm"
                 style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
               >
-                <Sparkles size={14} />
-                <span>{isGeneratingAi ? 'Analyzing with Gemini...' : 'Generate Gemini Intelligence'}</span>
+                <GoogleGeminiLogo size={15} />
+                <span>{isGeneratingAi ? 'Analyzing with Google 3.5 Flash...' : 'Generate Google 3.5 Flash Intelligence'}</span>
               </button>
             </div>
           )}
@@ -1133,26 +1482,28 @@ export function AssessmentShell({
         </div>
       )}
 
-      {/* ======================================================================
-          4. Validation & Traceability Note
-         ====================================================================== */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 'var(--space-3)',
-          padding: 'var(--space-3) var(--space-4)',
-          backgroundColor: 'var(--surface-primary)',
-          borderRadius: 'var(--radius-lg)',
-          border: '1px solid var(--border-light)',
-          fontSize: 'var(--text-xs)',
-          color: 'var(--text-secondary)',
-        }}
-      >
-        <ShieldCheck size={16} color="var(--accent-amber-dark)" style={{ flexShrink: 0 }} />
-        <div>
-          <strong style={{ color: 'var(--text-primary)' }}>Validation Context:</strong> The 9 sustainability metrics are calculated directly from active repository commits, releases, and maintainer topology. Popularity measures (Stars, Forks, Watchers) are presented as supporting telemetry for research comparison.
-        </div>
+          {/* ======================================================================
+              4. Validation & Traceability Note
+             ====================================================================== */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 'var(--space-3)',
+              padding: 'var(--space-3) var(--space-4)',
+              backgroundColor: 'var(--surface-primary)',
+              borderRadius: 'var(--radius-lg)',
+              border: '1px solid var(--border-light)',
+              fontSize: 'var(--text-xs)',
+              color: 'var(--text-secondary)',
+            }}
+          >
+            <ShieldCheck size={16} color="var(--accent-amber-dark)" style={{ flexShrink: 0 }} />
+            <div>
+              <strong style={{ color: 'var(--text-primary)' }}>Validation Context:</strong> The 9 sustainability metrics are calculated directly from active repository commits, releases, and maintainer topology. Popularity measures (Stars, Forks, Watchers) are presented as supporting telemetry for research comparison.
+            </div>
+          </div>
+        </main>
       </div>
     </div>
   );

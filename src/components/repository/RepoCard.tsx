@@ -9,7 +9,6 @@ import {
   Bookmark,
   BookmarkCheck,
   Search,
-  Trash2,
   Clock,
 } from 'lucide-react';
 import { StatusBadge } from '../common/StatusBadge.tsx';
@@ -26,7 +25,6 @@ interface RepoCardProps {
   language?: string;
   isSaved?: boolean;
   onToggleSave?: () => void;
-  onRemove?: () => void;
   variant?: 'compact' | 'full';
 }
 
@@ -40,7 +38,6 @@ export function RepoCard({
   language,
   isSaved = false,
   onToggleSave,
-  onRemove,
   variant = 'full',
 }: RepoCardProps) {
   const timestamp = savedAt || searchedAt;
@@ -190,17 +187,6 @@ export function RepoCard({
               ) : (
                 <Bookmark size={13} />
               )}
-            </button>
-          )}
-
-          {onRemove && (
-            <button
-              onClick={onRemove}
-              className="btn btn-danger btn-sm btn-icon"
-              title="Remove from history"
-              style={{ padding: '0.35rem' }}
-            >
-              <Trash2 size={13} />
             </button>
           )}
         </div>

@@ -20,10 +20,7 @@ import {
   Mail,
   AtSign,
   Search,
-  Trash2,
   ExternalLink,
-  RotateCcw,
-  KeyRound,
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth.tsx';
 import { useRepositoryStore } from '../hooks/useRepositoryStore.ts';
@@ -33,14 +30,11 @@ import { EmptyState } from '../components/common/EmptyState.tsx';
 type ProfileTab = 'personal' | 'history' | 'saved' | 'account';
 
 export function ProfilePage() {
-  const { user, updateProfile, logout, authMode } = useAuth();
+  const { user, updateProfile, logout } = useAuth();
   const {
     history,
     savedRepos,
     toggleBookmark,
-    deleteHistoryItem,
-    clearHistory,
-    deleteSavedRepo,
     checkIsSaved,
   } = useRepositoryStore();
   const navigate = useNavigate();
@@ -78,7 +72,6 @@ export function ProfilePage() {
   // History & Saved Filter States
   const [historyFilter, setHistoryFilter] = useState('');
   const [savedFilter, setSavedFilter] = useState('');
-  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   // Password Form State
   const [currentPassword, setCurrentPassword] = useState('');
@@ -473,42 +466,7 @@ export function ProfilePage() {
                     <Clock size={18} color="var(--accent-amber-dark)" />
                     <span>Search History ({history.length})</span>
                   </div>
-                  {history.length > 0 && (
-                    <button
-                      onClick={() => setShowClearConfirm(true)}
-                      className="btn btn-outline btn-sm"
-                    >
-                      <RotateCcw size={13} />
-                      <span>Clear All History</span>
-                    </button>
-                  )}
                 </div>
-
-                {showClearConfirm && (
-                  <div
-                    className="alert alert-warning"
-                    style={{ marginBottom: 'var(--space-4)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-                  >
-                    <span>Clear all repository search history for your account?</span>
-                    <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
-                      <button
-                        onClick={() => {
-                          clearHistory();
-                          setShowClearConfirm(false);
-                        }}
-                        className="btn btn-danger btn-sm"
-                      >
-                        Confirm Clear
-                      </button>
-                      <button
-                        onClick={() => setShowClearConfirm(false)}
-                        className="btn btn-outline btn-sm"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                )}
 
                 {history.length > 0 && (
                   <div style={{ marginBottom: 'var(--space-4)', maxWidth: '380px' }}>
@@ -629,14 +587,6 @@ export function ProfilePage() {
                                     ) : (
                                       <Bookmark size={13} />
                                     )}
-                                  </button>
-                                  <button
-                                    onClick={() => deleteHistoryItem(item.id)}
-                                    className="btn btn-danger btn-sm btn-icon"
-                                    title="Delete entry"
-                                    style={{ padding: '0.3rem' }}
-                                  >
-                                    <Trash2 size={13} />
                                   </button>
                                 </div>
                               </td>
@@ -763,14 +713,6 @@ export function ProfilePage() {
                             >
                               Assess
                             </Link>
-                            <button
-                              onClick={() => deleteSavedRepo(item.id)}
-                              className="btn btn-danger btn-sm btn-icon"
-                              title="Remove from saved"
-                              style={{ padding: '0.3rem' }}
-                            >
-                              <Trash2 size={13} />
-                            </button>
                           </div>
                         </div>
                       </div>
@@ -851,30 +793,6 @@ export function ProfilePage() {
                     Update Password
                   </button>
                 </form>
-
-                <div
-                  style={{
-                    marginTop: 'var(--space-8)',
-                    paddingTop: 'var(--space-6)',
-                    borderTop: '1px solid var(--border-subtle)',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', marginBottom: 'var(--space-4)' }}>
-                    <KeyRound size={14} />
-                    <span>Active Auth Engine: {authMode.toUpperCase()} Mode</span>
-                  </div>
-
-                  <h3 style={{ fontSize: 'var(--text-base)', color: 'var(--color-error)', marginBottom: 'var(--space-2)' }}>
-                    Session Termination
-                  </h3>
-                  <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', marginBottom: 'var(--space-3)' }}>
-                    Terminate the active workspace session on this client device.
-                  </p>
-                  <button onClick={handleSignOut} className="btn btn-danger btn-sm">
-                    <LogOut size={14} />
-                    <span>Sign Out of Account</span>
-                  </button>
-                </div>
               </div>
             )}
           </div>

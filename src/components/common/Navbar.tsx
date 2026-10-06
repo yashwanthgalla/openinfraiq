@@ -17,6 +17,7 @@ import {
   ChevronDown,
   Sparkles,
 } from 'lucide-react';
+import { GoogleGeminiLogo } from './GoogleAILogo';
 import { useAuth } from '../../hooks/useAuth.tsx';
 
 export function Navbar() {
@@ -150,7 +151,7 @@ export function Navbar() {
             </NavLink>
 
             <NavLink to="/ai-finder" style={navLinkStyle}>
-              <Sparkles size={15} color="#D97706" />
+              <GoogleGeminiLogo size={15} />
               AI Finder
             </NavLink>
 
@@ -421,7 +422,7 @@ export function Navbar() {
               onClick={() => setMobileMenuOpen(false)}
               style={navLinkStyle}
             >
-              <Sparkles size={16} color="#D97706" />
+              <GoogleGeminiLogo size={16} />
               AI Project Finder
             </NavLink>
             <NavLink

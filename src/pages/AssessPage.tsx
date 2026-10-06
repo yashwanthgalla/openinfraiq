@@ -204,8 +204,8 @@ export function AssessPage() {
     : false;
 
   return (
-    <div style={{ padding: 'var(--space-8) 0 var(--space-16)', backgroundColor: 'var(--surface-soft)' }}>
-      <div className="container" style={{ maxWidth: '1100px' }}>
+    <div style={{ padding: 'var(--space-8) 0 var(--space-16)', backgroundColor: 'var(--surface-soft)', minHeight: 'calc(100vh - 120px)' }}>
+      <div style={{ width: '100%', maxWidth: '100%', padding: '0 clamp(1rem, 2.5vw, 2.5rem)', boxSizing: 'border-box' }}>
         {/* Page Header */}
         <div style={{ marginBottom: 'var(--space-6)' }}>
           <div

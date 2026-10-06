@@ -12,6 +12,7 @@ import { RequirementInput } from '../components/ai/RequirementInput.tsx';
 import { RequirementSummary } from '../components/ai/RequirementSummary.tsx';
 import { AIMatchCard } from '../components/ai/AIMatchCard.tsx';
 import { AIRecommendations } from '../components/ai/AIRecommendations.tsx';
+import { GoogleGeminiLogo } from '../components/common/GoogleAILogo.tsx';
 import { useAuth } from '../hooks/useAuth.tsx';
 import {
   analyzeAiRequirements,
@@ -70,7 +71,7 @@ export function AIFinderPage() {
     setErrorMessage(null);
     setUnderstoodRequirements(null);
     setMatches([]);
-    setCurrentProgressPhase('Extracting specifications with Google Gemini...');
+    setCurrentProgressPhase('Extracting specifications with Google 3.5 Flash...');
 
     try {
       const response = await analyzeAiRequirements(textToAnalyze);
@@ -101,7 +102,7 @@ export function AIFinderPage() {
       'Searching candidate repositories on GitHub...',
       'Evaluating repository architectures and configuration...',
       'Computing quantitative sustainability metrics...',
-      'Running Google Gemini requirement matching & cloud relevance...',
+      'Running Google 3.5 Flash requirement matching & cloud relevance...',
       'Calculating combined ranking scores...',
     ];
     let phaseIdx = 0;
@@ -186,7 +187,7 @@ export function AIFinderPage() {
 
   return (
     <div style={{ padding: 'var(--space-8) 0 var(--space-16)', backgroundColor: 'var(--surface-soft)', minHeight: '80vh' }}>
-      <div className="container" style={{ maxWidth: '1080px' }}>
+      <div className="container">
         {/* Authentication Notice Banner for Guests */}
         {!isAuthenticated && (
           <div
@@ -263,12 +264,14 @@ export function AIFinderPage() {
               marginBottom: 'var(--space-6)',
             }}
           >
-            <Sparkles size={32} color="var(--accent-amber)" className="spin" style={{ margin: '0 auto var(--space-3)' }} />
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 'var(--space-3)' }}>
+              <GoogleGeminiLogo size={36} className="spin-slow" />
+            </div>
             <div style={{ fontSize: 'var(--text-base)', fontWeight: 700, color: 'var(--navy-950)', marginBottom: 'var(--space-2)' }}>
               {currentProgressPhase || 'Processing...'}
             </div>
             <p style={{ margin: 0, fontSize: 'var(--text-xs)', color: 'var(--text-secondary)' }}>
-              Combining Google Gemini qualitative analysis with OpenInfraIQ deterministic telemetry.
+              Combining Google Gemini 3.5 Flash qualitative reasoning with OpenInfraIQ deterministic telemetry.
             </p>
           </div>
         )}
@@ -354,8 +357,8 @@ export function AIFinderPage() {
           </div>
         )}
 
-        {/* User Saved Searches Sidebar / Card */}
-        {isAuthenticated && savedSearches.length > 0 && !matches.length && !understoodRequirements && (
+        {/* User Saved Searches List */}
+        {isAuthenticated && savedSearches.length > 0 && (
           <div
             className="card"
             style={{
@@ -364,11 +367,16 @@ export function AIFinderPage() {
               marginTop: 'var(--space-6)',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: 'var(--space-3)', color: 'var(--navy-950)' }}>
-              <History size={16} />
-              <h4 style={{ margin: 0, fontSize: 'var(--text-sm)', fontWeight: 700 }}>
-                My Saved AI Searches ({savedSearches.length})
-              </h4>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-3)', color: 'var(--navy-950)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <History size={16} color="var(--accent-amber-dark)" />
+                <h4 style={{ margin: 0, fontSize: 'var(--text-sm)', fontWeight: 700 }}>
+                  Saved AI Searches ({savedSearches.length})
+                </h4>
+              </div>
+              <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)' }}>
+                Persisted in backend database
+              </span>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 'var(--space-3)' }}>
@@ -408,12 +416,15 @@ export function AIFinderPage() {
 
                   <button
                     type="button"
-                    onClick={() => handleDeleteSaved(s.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteSaved(s.id);
+                    }}
                     className="btn btn-outline btn-sm btn-icon"
-                    title="Delete saved search"
-                    style={{ padding: '0.2rem', color: '#DC2626' }}
+                    title="Delete saved search from database"
+                    style={{ padding: '0.3rem', color: '#DC2626', borderColor: 'rgba(220, 38, 38, 0.25)' }}
                   >
-                    <Trash2 size={12} />
+                    <Trash2 size={13} />
                   </button>
                 </div>
               ))}

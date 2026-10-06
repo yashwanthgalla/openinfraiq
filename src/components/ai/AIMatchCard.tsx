@@ -21,6 +21,7 @@ import {
   Smartphone,
   Layers,
 } from 'lucide-react';
+import { GoogleGeminiLogo } from '../common/GoogleAILogo';
 import type { AIRepositoryMatch } from '../../types/index.ts';
 import { AIAnalysisPanel } from './AIAnalysisPanel.tsx';
 
@@ -146,8 +147,8 @@ export function AIMatchCard({ match }: AIMatchCardProps) {
 
         {/* AI Requirement Match */}
         <div>
-          <div style={{ fontSize: '0.6875rem', fontWeight: 700, color: '#D97706', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-            <Sparkles size={11} /> AI Match
+          <div style={{ fontSize: '0.6875rem', fontWeight: 700, color: '#1a73e8', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+            <GoogleGeminiLogo size={12} /> Google 3.5 Match
           </div>
           <div style={{ fontSize: 'var(--text-lg)', fontWeight: 800, color: getScoreColor(match.matchScore), fontFamily: 'var(--font-mono)' }}>
             {match.matchScore}%

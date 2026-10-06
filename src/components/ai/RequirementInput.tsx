@@ -1,4 +1,5 @@
-import { Sparkles, Terminal, ArrowRight } from 'lucide-react';
+import { Terminal, ArrowRight } from 'lucide-react';
+import { GoogleGeminiLogo } from '../common/GoogleAILogo';
 
 interface RequirementInputProps {
   value: string;
@@ -39,74 +40,86 @@ export function RequirementInput({
         backgroundColor: 'var(--surface-primary)',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: 'var(--space-2)' }}>
-        <Sparkles size={20} color="var(--accent-amber-dark)" />
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginBottom: 'var(--space-2)' }}>
+        <GoogleGeminiLogo size={22} />
         <h2 style={{ margin: 0, fontSize: 'var(--text-xl)', fontWeight: 800, color: 'var(--navy-950)' }}>
           AI Project Finder
         </h2>
+        <span
+          style={{
+            fontSize: '0.6875rem',
+            fontFamily: 'var(--font-mono)',
+            fontWeight: 700,
+            color: '#1a73e8',
+            backgroundColor: '#e8f0fe',
+            padding: '0.15rem 0.5rem',
+            borderRadius: '9999px',
+            border: '1px solid #cce0ff',
+          }}
+        >
+          Google 3.5 Flash
+        </span>
       </div>
       <p style={{ margin: '0 0 var(--space-5)', fontSize: 'var(--text-sm)', color: 'var(--text-secondary)' }}>
-        Describe what kind of project or repository you need in natural language. Whether you need <strong>Cloud Infrastructure</strong>, <strong>DevOps</strong>, <strong>Frontend</strong>, <strong>Backend APIs</strong>, <strong>Machine Learning / AI</strong>, <strong>Full-Stack</strong>, or <strong>Data Pipelines</strong>, Google Gemini will extract structured specifications tailored to your exact needs.
+        Describe what kind of project or repository you need in natural language. Whether you need <strong>Cloud Infrastructure</strong>, <strong>DevOps</strong>, <strong>Frontend</strong>, <strong>Backend APIs</strong>, <strong>Machine Learning / AI</strong>, <strong>Full-Stack</strong>, or <strong>Data Pipelines</strong>, Google 3.5 Flash will extract structured specifications tailored to your exact needs.
       </p>
 
-      <form onSubmit={handleSubmit}>
-        <div style={{ position: 'relative', marginBottom: 'var(--space-4)' }}>
-          <textarea
+      <form onSubmit={handleSubmit} style={{ marginBottom: 'var(--space-5)' }}>
+        <div className="input-group-pill">
+          <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+            <GoogleGeminiLogo size={18} />
+          </div>
+
+          <input
+            type="text"
             value={value}
             onChange={(e) => onChange(e.target.value)}
             disabled={isLoading}
-            placeholder="e.g., I need a modern React 19 web application with TailwindCSS and Vite, or an AWS infrastructure project using Terraform and Kubernetes, or a Python PyTorch project for LLM fine-tuning..."
-            rows={4}
-            style={{
-              width: '100%',
-              padding: 'var(--space-4)',
-              borderRadius: 'var(--radius-md)',
-              border: '1.5px solid var(--border-light)',
-              backgroundColor: 'var(--surface-soft)',
-              color: 'var(--text-primary)',
-              fontSize: 'var(--text-sm)',
-              fontFamily: 'inherit',
-              lineHeight: 1.6,
-              resize: 'vertical',
-              boxSizing: 'border-box',
-              outline: 'none',
-              transition: 'border-color 0.15s ease',
-            }}
-            onFocus={(e) => (e.target.style.borderColor = 'var(--accent-amber)')}
-            onBlur={(e) => (e.target.style.borderColor = 'var(--border-light)')}
+            placeholder="Describe what kind of project you need (e.g., React 19 with Vite, Kubernetes AWS cluster, PyTorch NLP)..."
           />
-        </div>
-
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            flexWrap: 'wrap',
-            gap: 'var(--space-3)',
-            marginBottom: 'var(--space-5)',
-          }}
-        >
-          <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)' }}>
-            <span style={{ fontWeight: 600 }}>Tip:</span> Specify your target domain, desired languages/frameworks (React, Spring Boot, PyTorch, Terraform), and key features.
-          </div>
 
           <button
             type="submit"
             disabled={!value.trim() || isLoading}
             className="btn btn-primary"
             style={{
+              borderRadius: '9999px',
+              padding: '0.55rem 1.35rem',
+              fontSize: 'var(--text-sm)',
+              fontWeight: 700,
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '0.5rem',
-              padding: '0.65rem 1.4rem',
-              fontWeight: 700,
+              gap: '0.45rem',
+              flexShrink: 0,
             }}
           >
-            <Sparkles size={16} />
-            <span>{isLoading ? 'Analyzing Requirements...' : 'Analyze Requirements'}</span>
-            {!isLoading && <ArrowRight size={15} />}
+            {isLoading ? (
+              <>
+                <div
+                  style={{
+                    width: '14px',
+                    height: '14px',
+                    borderRadius: '50%',
+                    border: '2px solid var(--navy-950)',
+                    borderTopColor: 'transparent',
+                  }}
+                  className="spin-slow"
+                />
+                <span>Analyzing...</span>
+              </>
+            ) : (
+              <>
+                <span>Analyze</span>
+                <ArrowRight size={15} />
+              </>
+            )}
           </button>
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'var(--space-2)', padding: '0 0.5rem' }}>
+          <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)' }}>
+            <span style={{ fontWeight: 600 }}>Tip:</span> Press Enter or click Analyze to extract structured project specs.
+          </div>
         </div>
       </form>
 

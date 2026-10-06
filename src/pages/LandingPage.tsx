@@ -11,13 +11,17 @@ import {
   Search,
   CheckCircle2,
   Compass,
+  Sparkles,
+  Bot,
 } from 'lucide-react';
 import {
   WORKFLOW_STEPS,
   WHY_SUSTAINABILITY_MATTERS,
   RESEARCH_METHODOLOGY,
   SUSTAINABILITY_DIMENSIONS,
+  AI_AMBASSADOR_GEMINI,
 } from '../data/projectData.ts';
+import { GoogleGeminiLogo, GoogleGLogo } from '../components/common/GoogleAILogo.tsx';
 
 export function LandingPage() {
   return (
@@ -46,23 +50,42 @@ export function LandingPage() {
           >
             {/* Left Column: Value Proposition */}
             <div>
-              <div
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.4rem',
-                  fontSize: '0.75rem',
-                  fontFamily: 'var(--font-mono)',
-                  color: 'var(--accent-amber)',
-                  backgroundColor: 'rgba(245, 158, 11, 0.1)',
-                  padding: '0.25rem 0.65rem',
-                  borderRadius: 'var(--radius-full)',
-                  border: '1px solid rgba(245, 158, 11, 0.25)',
-                  marginBottom: 'var(--space-4)',
-                }}
-              >
-                <Compass size={14} />
-                <span>Capstone Engineering Project</span>
+              <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap', marginBottom: 'var(--space-4)' }}>
+                <div
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.4rem',
+                    fontSize: '0.75rem',
+                    fontFamily: 'var(--font-mono)',
+                    color: 'var(--accent-amber)',
+                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                    padding: '0.25rem 0.65rem',
+                    borderRadius: 'var(--radius-full)',
+                    border: '1px solid rgba(245, 158, 11, 0.25)',
+                  }}
+                >
+                  <Compass size={14} />
+                  <span>Capstone Engineering Research</span>
+                </div>
+
+                <div
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.45rem',
+                    fontSize: '0.75rem',
+                    fontFamily: 'var(--font-mono)',
+                    color: '#93C5FD',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    padding: '0.25rem 0.65rem',
+                    borderRadius: 'var(--radius-full)',
+                    border: '1px solid rgba(59, 130, 246, 0.25)',
+                  }}
+                >
+                  <GoogleGeminiLogo size={14} />
+                  <span>Google Gemini</span>
+                </div>
               </div>
 
               <h1
@@ -621,11 +644,11 @@ export function LandingPage() {
             ))}
           </div>
 
-          {/* Integration Status Notice */}
+          {/* Integration Status & Google Gemini Spotlight */}
           <div
             style={{
               marginTop: 'var(--space-6)',
-              padding: 'var(--space-4)',
+              padding: 'var(--space-5)',
               backgroundColor: 'var(--surface-soft)',
               borderRadius: 'var(--radius-lg)',
               border: '1px solid var(--border-light)',
@@ -637,14 +660,39 @@ export function LandingPage() {
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-              <ShieldCheck size={20} color="var(--accent-amber-dark)" />
-              <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-primary)' }}>
-                Analysis will appear in the assessment shell when repository analysis is connected.
-              </span>
+              <div
+                style={{
+                  width: '44px',
+                  height: '44px',
+                  borderRadius: 'var(--radius-md)',
+                  backgroundColor: '#FFFFFF',
+                  border: '1px solid rgba(66, 133, 244, 0.25)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 2px 8px rgba(66, 133, 244, 0.1)',
+                  flexShrink: 0,
+                }}
+              >
+                <GoogleGeminiLogo size={26} />
+              </div>
+              <div>
+                <div style={{ fontSize: 'var(--text-sm)', fontWeight: 700, color: 'var(--navy-950)' }}>
+                  Active Live Pipeline &bull; Powered by Google 3.5 Flash ({AI_AMBASSADOR_GEMINI.primaryModel})
+                </div>
+                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)' }}>
+                  Live GitHub Telemetry + 9 Deterministic Core Metrics + Google Gemini 3.5 Flash Qualitative Intelligence.
+                </div>
+              </div>
             </div>
-            <Link to="/assess" className="btn btn-outline btn-sm">
-              Launch Assessment Shell
-            </Link>
+            <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+              <Link to="/ai-finder" className="btn btn-outline btn-sm">
+                AI Project Finder
+              </Link>
+              <Link to="/assess" className="btn btn-primary btn-sm">
+                Launch Assessment Shell
+              </Link>
+            </div>
           </div>
         </div>
       </section>
@@ -880,7 +928,7 @@ export function LandingPage() {
           textAlign: 'center',
         }}
       >
-        <div className="container" style={{ maxWidth: '680px' }}>
+        <div className="container">
           <h2
             style={{
               fontSize: 'var(--text-3xl)',

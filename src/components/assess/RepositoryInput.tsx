@@ -66,9 +66,6 @@ export function RepositoryInput({ onAnalyze, onInvalid, isProcessing = false }: 
           style={{ marginBottom: 'var(--space-2)' }}
         >
           <span>Repository Address</span>
-          <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', fontWeight: 400 }}>
-            Public cloud infrastructure repositories
-          </span>
         </label>
 
         <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>

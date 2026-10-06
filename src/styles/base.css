@@ -8,6 +8,38 @@
   padding: 0;
 }
 
+/* ==========================================================================
+   Global Scrollbar Removal
+   Completely removes clunky native OS scrollbars, rails, and arrow buttons
+   everywhere across the entire website while preserving full scrollability.
+   ========================================================================== */
+html,
+body,
+* {
+  scrollbar-width: none !important; /* Firefox */
+  -ms-overflow-style: none !important; /* IE 10+ and Edge Legacy */
+}
+
+*::-webkit-scrollbar {
+  display: none !important; /* Chrome, Edge, Safari, Opera */
+  width: 0 !important;
+  height: 0 !important;
+}
+
+*::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+*::-webkit-scrollbar-thumb {
+  display: none !important;
+}
+
+*::-webkit-scrollbar-track {
+  display: none !important;
+}
+
 html {
   font-size: 16px;
   line-height: 1.5;
@@ -72,14 +104,15 @@ code, pre, .font-mono {
   font-family: var(--font-mono);
 }
 
-/* Common Layout Container */
+/* Common Layout Container - Full Screen Width Without Wasted Space */
 .container {
   width: 100%;
-  max-width: var(--container-max-width);
+  max-width: 100%;
   margin-left: auto;
   margin-right: auto;
-  padding-left: var(--space-6);
-  padding-right: var(--space-6);
+  padding-left: clamp(1rem, 2.5vw, 2.5rem);
+  padding-right: clamp(1rem, 2.5vw, 2.5rem);
+  box-sizing: border-box;
 }
 
 /* Subtle Technical Grid Background for Engineering Sections */

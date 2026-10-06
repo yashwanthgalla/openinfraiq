@@ -9,6 +9,7 @@ import {
   Activity,
   Bookmark,
 } from 'lucide-react';
+import { GoogleGeminiLogo } from '../common/GoogleAILogo.tsx';
 import type { AIRequirementResponse } from '../../types/index.ts';
 
 interface RequirementSummaryProps {
@@ -59,14 +60,19 @@ export function RequirementSummary({
             <span
               style={{
                 fontSize: '0.6875rem',
-                backgroundColor: 'rgba(217, 119, 6, 0.12)',
-                color: '#B45309',
-                padding: '0.15rem 0.5rem',
+                backgroundColor: 'rgba(66, 133, 244, 0.1)',
+                color: '#1D4ED8',
+                padding: '0.15rem 0.55rem',
                 borderRadius: 'var(--radius-full)',
                 fontWeight: 700,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.25rem',
+                border: '1px solid rgba(66, 133, 244, 0.25)',
               }}
             >
-              Gemini Parsed
+              <GoogleGeminiLogo size={11} />
+              <span>Google 3.5 Flash Parsed</span>
             </span>
           </div>
           <p style={{ margin: 0, fontSize: 'var(--text-xs)', color: 'var(--text-secondary)' }}>

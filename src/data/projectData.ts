@@ -3,41 +3,80 @@ import type { WorkflowStep, AssessmentDimension } from '../types/index.ts';
 
 export const WORKFLOW_STEPS: WorkflowStep[] = [
   {
-    step: 'STEP 01',
+    step: 'STAGE 01',
     number: '01',
-    title: 'Select repository',
-    description: 'The user enters or selects a public infrastructure repository address.',
-    detail: 'Input public cloud infrastructure repositories for evaluation against reproducible evidence criteria.',
+    title: 'Repository Ingestion & Telemetry Harvesting',
+    description: 'Real-time telemetry extraction from public GitHub repositories via verified backend APIs.',
+    detail: 'Harvests commit timelines, pull request review latency, issue closure velocity, release cadences, and maintainer distribution topologies.',
   },
   {
-    step: 'STEP 02',
+    step: 'STAGE 02',
     number: '02',
-    title: 'Analyze repository',
-    description: 'The system evaluates public repository activity and relevant project evidence.',
-    detail: 'Examines verifiable repository timelines, commit sequences, and project lifecycle markers.',
+    title: 'Deterministic 9 Core Sustainability Metrics',
+    description: 'Empirical calculation of 9 fundamental maintenance health indicators benchmarked against industry standards.',
+    detail: 'Evaluates Bus Factor, Release Cadence Stability, Commit Velocity, Maintainer Active Ratio, Issue Latency, PR Turnaround, Governance Health, Dependency Freshness, and Popularity Divergence.',
   },
   {
-    step: 'STEP 03',
+    step: 'STAGE 03',
     number: '03',
-    title: 'Characterize maintenance',
-    description: 'The workflow considers maintainer distribution and release history.',
-    detail: 'Analyzes distribution of maintenance workload rather than aggregate contributor counts.',
+    title: 'ML Predictive Continuity Modeling',
+    description: 'Supervised machine learning ensemble predicting 12-month maintenance continuity trajectories.',
+    detail: 'Calibrated against historical open-source projects that previously stalled or transitioned, providing empirical confidence intervals.',
   },
   {
-    step: 'STEP 04',
+    step: 'STAGE 04',
     number: '04',
-    title: 'Evaluate sustainability',
-    description: 'Sustainability indicators are evaluated independently of popularity signals.',
-    detail: 'Separates public adoption/star volume from operational continuity and governance longevity.',
+    title: 'Google Gemini 3.5 Flash AI Architectural Reasoning',
+    description: 'Deep qualitative analysis powered by Google Gemini (gemini-3.5-flash).',
+    detail: 'Performs semantic architectural evaluation, cloud-native readiness analysis, community sentiment triage, and zero-hallucination adoption verdicts.',
   },
   {
-    step: 'STEP 05',
+    step: 'STAGE 05',
     number: '05',
-    title: 'Support adoption decision',
-    description: 'The integrated system predicts maintenance continuity for infrastructure adoption decisions.',
-    detail: 'Provides traceable evidence for technical evaluation committees and platform engineering teams.',
+    title: 'Adoption Decision Dossier & CSV Audit Export',
+    description: 'Actionable intelligence synthesis with complete telemetry audit download.',
+    detail: 'Delivers a transparent scoring breakdown, divergence matrix distinguishing vanity stars from operational health, and single-click CSV export for technical review committees.',
   },
 ];
+
+export const GEMINI_AI_CONFIG = {
+  brandName: 'Google Gemini',
+  role: 'Cognitive Reasoning Engine & Qualitative Intelligence',
+  primaryModel: 'gemini-3.5-flash',
+  backupModel: 'gemini-2.5-flash',
+  description:
+    'Google Gemini powers OpenInfraIQ as our core qualitative intelligence engine, bridging the gap between raw quantitative repository telemetry and strategic architectural adoption decisions.',
+  highlights: [
+    {
+      title: 'Architectural Pattern & Cloud-Native Assessment',
+      detail:
+        'Analyzes project dependencies, IaC structure, Kubernetes integration, and multi-cloud resilience without fabricating unevidenced technologies.',
+    },
+    {
+      title: 'Natural Language Project Requirement Matching',
+      detail:
+        'Deconstructs unstructured engineering problem statements into structured technology vectors (cloud providers, compliance, languages, complexity) to recommend ideal candidate repositories.',
+    },
+    {
+      title: 'Community Sentiment & Burnout Detection',
+      detail:
+        'Triages recent issue threads, maintainer responses, and PR discourse to detect early signs of maintainer fatigue or community fragmentation.',
+    },
+    {
+      title: 'Evidence-Bounded Zero-Hallucination Guardrails',
+      detail:
+        'Strictly binds all qualitative reasoning to deterministic GitHub signals, ensuring every conclusion is auditable and grounded in empirical data.',
+    },
+  ],
+  capabilities: [
+    'Sub-second inference with Google DeepMind state-of-the-art Flash architectures',
+    'Massive context window handling extensive commit logs and release manifests',
+    'Structured JSON schema enforcement ensuring deterministic integration with Spring Boot',
+    'Multi-dimensional scoring calibration (Match % + Sustainability % + Tech Fit %)',
+  ],
+};
+
+export const AI_AMBASSADOR_GEMINI = GEMINI_AI_CONFIG;
 
 export const WHY_SUSTAINABILITY_MATTERS = [
   {

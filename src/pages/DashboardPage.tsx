@@ -19,7 +19,7 @@ import { EmptyState } from '../components/common/EmptyState.tsx';
 
 export function DashboardPage() {
   const { user } = useAuth();
-  const { history, savedRepos, toggleBookmark, deleteHistoryItem, checkIsSaved } =
+  const { history, savedRepos, toggleBookmark, checkIsSaved } =
     useRepositoryStore();
 
   const recentSearches = history.slice(0, 4);
@@ -242,7 +242,6 @@ export function DashboardPage() {
                         status: repo.status,
                       })
                     }
-                    onRemove={() => deleteHistoryItem(repo.id)}
                     variant="compact"
                   />
                 ))}

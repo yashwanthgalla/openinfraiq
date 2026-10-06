@@ -117,7 +117,7 @@
   --shadow-dark: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
 
   /* Layout */
-  --container-max-width: 1240px;
+  --container-max-width: 100%;
   --header-height: 68px;
 
   /* Transitions */

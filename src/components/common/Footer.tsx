@@ -5,6 +5,7 @@
 
 import { Link } from 'react-router-dom';
 import { Layers, ShieldCheck } from 'lucide-react';
+import { GoogleGeminiLogo } from './GoogleAILogo.tsx';
 
 export function Footer() {
   return (
@@ -51,22 +52,42 @@ export function Footer() {
               Emerging Infrastructure Project Maturity Assessment for Adoption Decisions.
               Evaluating maintenance sustainability using repository activity, maintainer distribution, and evidence-based project signals.
             </p>
-            <div
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.4rem',
-                fontSize: '0.75rem',
-                fontFamily: 'var(--font-mono)',
-                color: 'var(--accent-amber)',
-                backgroundColor: 'rgba(245, 158, 11, 0.1)',
-                padding: '0.2rem 0.5rem',
-                borderRadius: 'var(--radius-sm)',
-                border: '1px solid rgba(245, 158, 11, 0.25)',
-              }}
-            >
-              <ShieldCheck size={13} />
-              Capstone Engineering Project
+            <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
+              <div
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  fontSize: '0.75rem',
+                  fontFamily: 'var(--font-mono)',
+                  color: 'var(--accent-amber)',
+                  backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                  padding: '0.2rem 0.5rem',
+                  borderRadius: 'var(--radius-sm)',
+                  border: '1px solid rgba(245, 158, 11, 0.25)',
+                }}
+              >
+                <ShieldCheck size={13} />
+                Capstone Engineering Project
+              </div>
+
+              <div
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.45rem',
+                  fontSize: '0.75rem',
+                  fontFamily: 'var(--font-mono)',
+                  color: '#93C5FD',
+                  backgroundColor: 'rgba(59, 130, 246, 0.12)',
+                  padding: '0.2rem 0.55rem',
+                  borderRadius: 'var(--radius-sm)',
+                  border: '1px solid rgba(59, 130, 246, 0.25)',
+                }}
+              >
+                <GoogleGeminiLogo size={14} />
+                Google Gemini
+              </div>
             </div>
           </div>
 
