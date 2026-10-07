@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import {
-  Sparkles,
   AlertCircle,
   ArrowUpDown,
   History,

@@ -7,12 +7,9 @@
 import { Link } from 'react-router-dom';
 import {
   ArrowRight,
-  ShieldCheck,
   Search,
   CheckCircle2,
   Compass,
-  Sparkles,
-  Bot,
 } from 'lucide-react';
 import {
   WORKFLOW_STEPS,
@@ -21,7 +18,7 @@ import {
   SUSTAINABILITY_DIMENSIONS,
   AI_AMBASSADOR_GEMINI,
 } from '../data/projectData.ts';
-import { GoogleGeminiLogo, GoogleGLogo } from '../components/common/GoogleAILogo.tsx';
+import { GoogleGeminiLogo } from '../components/common/GoogleAILogo.tsx';
 
 export function LandingPage() {
   return (

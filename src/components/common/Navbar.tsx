@@ -15,7 +15,6 @@ import {
   Menu,
   X,
   ChevronDown,
-  Sparkles,
 } from 'lucide-react';
 import { GoogleGeminiLogo } from './GoogleAILogo';
 import { useAuth } from '../../hooks/useAuth.tsx';
