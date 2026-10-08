@@ -12,6 +12,10 @@ import { RequirementSummary } from '../components/ai/RequirementSummary.tsx';
 import { AIMatchCard } from '../components/ai/AIMatchCard.tsx';
 import { AIRecommendations } from '../components/ai/AIRecommendations.tsx';
 import { GoogleGeminiLogo } from '../components/common/GoogleAILogo.tsx';
+import {
+  AIRequirementSkeleton,
+  AIRepositoriesSkeleton,
+} from '../components/common/SkeletonLoader.tsx';
 import { useAuth } from '../hooks/useAuth.tsx';
 import {
   analyzeAiRequirements,
@@ -275,6 +279,13 @@ export function AIFinderPage() {
           </div>
         )}
 
+        {/* AI Requirements Extraction Skeleton State */}
+        {isAnalyzingRequirements && (
+          <div style={{ marginBottom: 'var(--space-6)' }}>
+            <AIRequirementSkeleton />
+          </div>
+        )}
+
         {/* Understood Requirements Card */}
         {understoodRequirements && !isAnalyzingRequirements && (
           <div style={{ marginBottom: 'var(--space-6)' }}>
@@ -285,6 +296,13 @@ export function AIFinderPage() {
               onSave={isAuthenticated ? handleSaveSearch : undefined}
               isSaved={isSavedSearchActive}
             />
+          </div>
+        )}
+
+        {/* Candidate Repositories Search Skeleton State */}
+        {isSearchingRepositories && (
+          <div style={{ marginBottom: 'var(--space-6)' }}>
+            <AIRepositoriesSkeleton count={3} />
           </div>
         )}
 

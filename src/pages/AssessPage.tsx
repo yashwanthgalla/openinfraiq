@@ -8,16 +8,15 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   Search,
-  CheckCircle2,
   Clock,
   Layers,
-  RefreshCw,
   AlertCircle,
   Key,
 } from 'lucide-react';
 import { RepositoryInput } from '../components/assess/RepositoryInput.tsx';
 import { AssessmentShell } from '../components/assess/AssessmentShell.tsx';
 import { NotFoundView } from '../components/common/NotFoundView.tsx';
+import { AssessmentSkeleton } from '../components/common/SkeletonLoader.tsx';
 import { useRepositoryStore } from '../hooks/useRepositoryStore.ts';
 import { parseRepositoryUrl } from '../lib/validators.ts';
 import { analyzeRepository } from '../lib/analyzer.ts';
@@ -39,7 +38,6 @@ export function AssessPage() {
 
   const [assessmentResult, setAssessmentResult] = useState<RealAssessmentResult | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [currentPhase, setCurrentPhase] = useState<string>('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [notFoundState, setNotFoundState] = useState<NotFoundState | null>(null);
 
@@ -59,20 +57,6 @@ export function AssessPage() {
       setErrorMessage(null);
       setNotFoundState(null);
       setShowTokenPrompt(false);
-      setCurrentPhase('Initializing GitHub repository query');
-
-      const phases = [
-        'Querying GitHub repository metadata',
-        'Analyzing maintainer topology and contributor dispersion',
-        'Extracting release cadence and version history',
-        'Evaluating recent commit timeline and activity dynamics',
-        'Computing sustainability indicators & maintenance continuity',
-      ];
-      let phaseIndex = 0;
-      const phaseInterval = setInterval(() => {
-        phaseIndex = (phaseIndex + 1) % phases.length;
-        setCurrentPhase(phases[phaseIndex]);
-      }, 700);
 
       try {
         let result: RealAssessmentResult;
@@ -89,16 +73,12 @@ export function AssessPage() {
             errMsg.includes('authenticated')
           ) {
             console.warn('Backend unavailable or user unauthenticated, running client analyzer:', errMsg);
-            result = await analyzeRepository(owner, repo, (phase) => {
-              setCurrentPhase(phase);
-            });
+            result = await analyzeRepository(owner, repo);
           } else {
             throw backendErr;
           }
         }
 
-        clearInterval(phaseInterval);
-        setCurrentPhase('Computing sustainability indicators & maintenance continuity');
         setAssessmentResult(result);
         setNotFoundState(null);
 
@@ -112,7 +92,6 @@ export function AssessPage() {
           result.language
         );
       } catch (err: unknown) {
-        clearInterval(phaseInterval);
         const msg = (err as Error).message || 'Failed to complete repository assessment.';
 
         const isNotFound =
@@ -138,7 +117,6 @@ export function AssessPage() {
         // Record as unavailable
         recordSearch(owner, repo, normalizedUrl, 'unavailable');
       } finally {
-        clearInterval(phaseInterval);
         setIsProcessing(false);
       }
     },
@@ -261,83 +239,10 @@ export function AssessPage() {
           </div>
         )}
 
-        {/* Live Processing State Animation */}
+        {/* Skeleton Loading Screen */}
         {isProcessing && (
-          <div
-            className="card"
-            style={{
-              padding: 'var(--space-8)',
-              border: '1px solid var(--accent-amber)',
-              backgroundColor: 'var(--surface-primary)',
-              boxShadow: 'var(--shadow-md)',
-              marginBottom: 'var(--space-8)',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
-              <div
-                style={{
-                  width: '32px',
-                  height: '32px',
-                  borderRadius: '50%',
-                  backgroundColor: 'rgba(245, 158, 11, 0.15)',
-                  color: 'var(--accent-amber-dark)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <RefreshCw size={18} className="spin-slow" />
-              </div>
-              <div>
-                <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 600, color: 'var(--navy-950)' }}>
-                  Extracting Public Repository Signals
-                </h3>
-                <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)' }}>
-                  {currentPhase}...
-                </span>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-              {[
-                'Querying GitHub repository metadata',
-                'Analyzing maintainer topology and contributor dispersion',
-                'Extracting release cadence and version history',
-                'Evaluating recent commit timeline and activity dynamics',
-                'Computing sustainability indicators & maintenance continuity',
-              ].map((stage) => {
-                const isCurrent = currentPhase.toLowerCase().includes(stage.toLowerCase().slice(0, 15));
-                return (
-                  <div
-                    key={stage}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 'var(--space-3)',
-                      fontSize: 'var(--text-sm)',
-                      color: isCurrent ? 'var(--accent-amber-dark)' : 'var(--text-secondary)',
-                      fontWeight: isCurrent ? 600 : 400,
-                    }}
-                  >
-                    {isCurrent ? (
-                      <div
-                        style={{
-                          width: '14px',
-                          height: '14px',
-                          borderRadius: '50%',
-                          border: '2px solid var(--accent-amber)',
-                          borderTopColor: 'transparent',
-                        }}
-                        className="spin-slow"
-                      />
-                    ) : (
-                      <CheckCircle2 size={14} color="var(--border-light)" />
-                    )}
-                    <span>{stage}</span>
-                  </div>
-                );
-              })}
-            </div>
+          <div style={{ marginBottom: 'var(--space-8)' }}>
+            <AssessmentSkeleton />
           </div>
         )}
 
